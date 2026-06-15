@@ -4,15 +4,25 @@ import { pgEnum } from "drizzle-orm/pg-core";
 
 export const FIELD_TYPES = [
   "text",
+  "textarea",
   "number",
+  "email",
+  "password",
   "select",
   "multiselect",
-  "reference",
+  "radio",
+  "checkbox",
+  "switch",
   "date",
-  "boolean",
+  "datetime",
+  "time",
+  "file",
+  "image",
+  "richtext",
   "json",
-  "password",
-  "email",
+  "reference",
+  "autocomplete",
+  "boolean",
 ] as const;
 export const fieldTypeEnum = pgEnum("field_type", FIELD_TYPES);
 export type TFieldType = (typeof FIELD_TYPES)[number];
