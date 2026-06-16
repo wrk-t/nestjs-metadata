@@ -60,6 +60,15 @@ export const screens = pgTable("screens", {
   // current URL against these patterns to extract path params.
   pathPattern: varchar("path_pattern", { length: 500 }),
 
+  // ── Permission-based visibility ──
+  visibleToPermissions: json("visible_to_permissions").$type<
+    Array<{
+      resource: string;
+      action: string;
+      scope?: "own" | "tenant" | "all";
+    }>
+  >(),
+
   // ── Status ─────────────────────────────────────────────────
   isActive: boolean("is_active").default(true).notNull(),
 

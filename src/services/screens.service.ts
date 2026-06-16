@@ -11,6 +11,7 @@ import {
   RequestContext,
   ITranslationService,
 } from "@esmaeel_emadi/nestjs-core";
+import { ClsService } from "nestjs-cls";
 import { MetadataBaseService } from "../common/metadata-base-service";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 import {
@@ -48,6 +49,7 @@ export class ScreensService extends MetadataBaseService<
     private readonly screenWidgetsRepo?: ScreenWidgetsPgRepository,
     @Optional()
     private readonly widgetContractsRepo?: WidgetContractsPgRepository,
+    @Optional() private readonly cls?: ClsService,
   ) {
     super(repo, requestContext, translationService);
   }
@@ -107,6 +109,43 @@ export class ScreensService extends MetadataBaseService<
   }
 
   // ──────────────────────────────────────────────────────────────────
+  // List — filtered by visibleToPermissions
+  // ──────────────────────────────────────────────────────────────────
+
+  override async findMany(filters: any) {
+    const result = await super.findMany(filters);
+    if (result instanceof HttpException) return result;
+
+    const scopeMap = this.resolveScopeMap();
+    if (Object.keys(scopeMap).length === 0) return result; // no scope info, pass through
+
+    result.data = result.data.filter((s) => {
+      const visPerms = (s as any).visibleToPermissions as Array<{
+        resource: string;
+        action: string;
+        scope?: "own" | "tenant" | "all";
+      }> | null;
+      if (!visPerms?.length) return true; // no restriction → visible to all
+      return visPerms.every((req) => {
+        const userScopes: string[] = scopeMap[req.resource] ?? [];
+        if (!req.scope) return userScopes.length > 0;
+        return userScopes.includes(req.scope);
+      });
+    });
+
+    return result;
+  }
+
+  private resolveScopeMap(): Record<string, string[]> {
+    return (
+      this.requestContext?.getScopeMap() ??
+      this.cls?.get("scopeMap") ??
+      (this.repo as any).getScopeContext?.()?.scopeMap ??
+      {}
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────────────────────────────
 
@@ -116,6 +155,26 @@ export class ScreensService extends MetadataBaseService<
     // 1. Load screen
     const screen = await this.repo.selectOneById(screenId);
     if (!screen) return new NotFoundDto();
+
+    // 1.5 Check permission-based visibility
+    const visPerms = screen.visibleToPermissions as Array<{
+      resource: string;
+      action: string;
+      scope?: "own" | "tenant" | "all";
+    }> | null;
+    if (visPerms?.length) {
+      const scopeMap = this.resolveScopeMap();
+      const hasAll = visPerms.every((req) => {
+        const userScopes: string[] = scopeMap[req.resource] ?? [];
+        if (!req.scope) return userScopes.length > 0;
+        return userScopes.includes(req.scope);
+      });
+      if (!hasAll)
+        return new ForbiddenDto("errors.forbidden").details({
+          reason: "screen_visibility",
+          requiredPermissions: visPerms,
+        });
+    }
 
     // 2. Load screen context (optional)
     const context = this.screenContextsRepo
