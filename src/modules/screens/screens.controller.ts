@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query, Version } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { OkDto } from "@esmaeel_emadi/ts-exc";
+import { OkDto } from "@wrk-t/ts-exc";
 import { ScreensService } from "../../services/screens.service";
 
 @ApiTags("Screens")

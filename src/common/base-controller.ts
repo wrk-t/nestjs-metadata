@@ -1,8 +1,8 @@
 import { Body, Delete, Get, Param, Patch, Post, Query, Version } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
 import { Transactional } from "@nestjs-cls/transactional";
-import { CreatedDto, OkDto } from "@esmaeel_emadi/ts-exc";
-import { ScopedBaseService } from "@esmaeel_emadi/nestjs-core";
+import { CreatedDto, OkDto } from "@wrk-t/ts-exc";
+import { ScopedBaseService } from "@wrk-t/nestjs-core";
 
 /**
  * Base CRUD controller for metadata entities.

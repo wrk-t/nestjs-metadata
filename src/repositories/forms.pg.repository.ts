@@ -14,8 +14,8 @@ import { formOverrides } from "../schemas";
 import { formSections } from "../schemas";
 import { forms } from "../schemas";
 import { sectionOverrides } from "../schemas";
-import { Repository } from "@esmaeel_emadi/nestjs-core";
-import type { ILogService } from "@esmaeel_emadi/nestjs-core";
+import { Repository } from "@wrk-t/nestjs-core";
+import type { ILogService } from "@wrk-t/nestjs-core";
 // types removed;
 import { TFormRenderData } from "../services/forms.types";
 

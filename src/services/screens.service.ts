@@ -3,14 +3,14 @@ import {
   ForbiddenDto,
   HttpException,
   NotFoundDto,
-} from "@esmaeel_emadi/ts-exc";
+} from "@wrk-t/ts-exc";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { eq, SQL } from "drizzle-orm";
 import {
   AccessControlService,
   RequestContext,
   ITranslationService,
-} from "@esmaeel_emadi/nestjs-core";
+} from "@wrk-t/nestjs-core";
 import { ClsService } from "nestjs-cls";
 import { MetadataBaseService } from "../common/metadata-base-service";
 import { TRANSLATION_SERVICE } from "../metadata.types";

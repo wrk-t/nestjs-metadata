@@ -6,7 +6,7 @@ import {
 } from "@nestjs-cls/transactional";
 import { and, asc, eq, isNull, or, SQL } from "drizzle-orm";
 import { ClsService } from "nestjs-cls";
-import { Repository, ILogService } from "@esmaeel_emadi/nestjs-core";
+import { Repository, ILogService } from "@wrk-t/nestjs-core";
 import { tables } from "../schemas";
 import { tableColumnInstances } from "../schemas";
 import { fieldDefinitions } from "../schemas";

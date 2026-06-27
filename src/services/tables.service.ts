@@ -2,15 +2,15 @@ import {
   BadRequestDto,
   ForbiddenDto,
   NotFoundDto,
-} from "@esmaeel_emadi/ts-exc";
+} from "@wrk-t/ts-exc";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
-import type { TScope, ScopeMap } from "@esmaeel_emadi/nestjs-core";
+import type { TScope, ScopeMap } from "@wrk-t/nestjs-core";
 import {
   AccessControlService,
   RequestContext,
   ITranslationService,
-} from "@esmaeel_emadi/nestjs-core";
+} from "@wrk-t/nestjs-core";
 import { MetadataBaseService } from "../common/metadata-base-service";
 import { fieldDefinitions, tableColumnInstances, tables } from "../schemas";
 import { TRANSLATION_SERVICE } from "../metadata.types";

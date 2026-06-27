@@ -1,10 +1,10 @@
-import { NotFoundDto } from "@esmaeel_emadi/ts-exc";
+import { NotFoundDto } from "@wrk-t/ts-exc";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import {
   RequestContext,
   ITranslationService,
-} from "@esmaeel_emadi/nestjs-core";
+} from "@wrk-t/nestjs-core";
 import { MetadataBaseService } from "../common/metadata-base-service";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 import { screenContexts } from "../schemas";

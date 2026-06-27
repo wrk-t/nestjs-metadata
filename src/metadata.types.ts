@@ -2,7 +2,7 @@ import type { Type } from "@nestjs/common";
 import type {
   ILogService,
   ITranslationService,
-} from "@esmaeel_emadi/nestjs-core";
+} from "@wrk-t/nestjs-core";
 
 /** Injection token for MetadataModule options. */
 export const METADATA_OPTIONS = "METADATA_OPTIONS";

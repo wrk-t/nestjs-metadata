@@ -2,9 +2,9 @@ import {
   BadRequestDto,
   ForbiddenDto,
   NotFoundDto,
-} from "@esmaeel_emadi/ts-exc";
+} from "@wrk-t/ts-exc";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
-import type { TScope } from "@esmaeel_emadi/nestjs-core";
+import type { TScope } from "@wrk-t/nestjs-core";
 import type { fieldDefinitions } from "../schemas";
 import { fieldOverrides } from "../schemas";
 import { formElements } from "../schemas";
@@ -12,11 +12,11 @@ import { formOverrides } from "../schemas";
 import { formSections } from "../schemas";
 import { forms } from "../schemas";
 import { sectionOverrides } from "../schemas";
-import { AccessControlService } from "@esmaeel_emadi/nestjs-core";
-import type { ScopeMap } from "@esmaeel_emadi/nestjs-core";
-import { RequestContext } from "@esmaeel_emadi/nestjs-core";
+import { AccessControlService } from "@wrk-t/nestjs-core";
+import type { ScopeMap } from "@wrk-t/nestjs-core";
+import { RequestContext } from "@wrk-t/nestjs-core";
 import { MetadataBaseService } from "../common/metadata-base-service";
-import { ITranslationService } from "@esmaeel_emadi/nestjs-core";
+import { ITranslationService } from "@wrk-t/nestjs-core";
 import { FormsPgRepository } from "../repositories/forms.pg.repository";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 import type {

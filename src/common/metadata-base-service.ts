@@ -5,7 +5,7 @@ import {
   ITranslationService,
   TBasePgTable,
   BasePostgresRepository,
-} from "@esmaeel_emadi/nestjs-core";
+} from "@wrk-t/nestjs-core";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 
 /**

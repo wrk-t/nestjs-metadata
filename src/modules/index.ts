@@ -1,7 +1,7 @@
 // ── Type-only exports for nestjs-metadata modules ──────────
 // Each module exports SelectModel, InsertModel, and the schema.
 // Import specific modules to avoid name collisions:
-//   import { SelectModel as FormSelectModel } from "@esmaeel_emadi/nestjs-metadata/schemas";
+//   import { SelectModel as FormSelectModel } from "@wrk-t/nestjs-metadata/schemas";
 
 // Re-export schemas only (no type collisions)
 export { fieldDefinitions } from "./field-definitions/types";

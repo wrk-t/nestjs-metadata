@@ -6,7 +6,7 @@ import {
 } from "@nestjs-cls/transactional";
 import { eq, SQL } from "drizzle-orm";
 import { ClsService } from "nestjs-cls";
-import { Repository, ILogService } from "@esmaeel_emadi/nestjs-core";
+import { Repository, ILogService } from "@wrk-t/nestjs-core";
 import { screenWidgets } from "../schemas";
 
 @Injectable()

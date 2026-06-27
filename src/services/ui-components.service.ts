@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
-import { RequestContext, ITranslationService } from "@esmaeel_emadi/nestjs-core";
+import { RequestContext, ITranslationService } from "@wrk-t/nestjs-core";
 import { MetadataBaseService } from "../common/metadata-base-service";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 import { uiComponents } from "../schemas";

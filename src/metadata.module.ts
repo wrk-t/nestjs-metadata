@@ -2,7 +2,7 @@ import { DynamicModule, Module } from "@nestjs/common";
 import {
   RequestContext,
   AccessControlService,
-} from "@esmaeel_emadi/nestjs-core";
+} from "@wrk-t/nestjs-core";
 import {
   METADATA_OPTIONS,
   TRANSLATION_SERVICE,

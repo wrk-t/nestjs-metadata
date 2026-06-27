@@ -1,6 +1,6 @@
-import { BadRequestDto, ForbiddenDto } from "@esmaeel_emadi/ts-exc";
+import { BadRequestDto, ForbiddenDto } from "@wrk-t/ts-exc";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
-import { AccessControlService, RequestContext, ITranslationService } from "@esmaeel_emadi/nestjs-core";
+import { AccessControlService, RequestContext, ITranslationService } from "@wrk-t/nestjs-core";
 import { MetadataBaseService } from "../common/metadata-base-service";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 import { screenWidgets } from "../schemas";
