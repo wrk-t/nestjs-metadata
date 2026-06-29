@@ -5,6 +5,25 @@ export { fieldTypeEnum, scopeEnum } from "../helpers/enums";
 export type { TFieldType, TScope } from "../helpers/enums";
 export type { ISimpleCondition, ICompoundCondition } from "../types/conditions";
 
+// ── Component architecture (v2) ────────────────────────────
+export {
+  archComponents,
+  archComponentsRelations,
+  archComponentElements,
+  archComponentElementsRelations,
+  archComponentOverrides,
+  archComponentOverridesRelations,
+} from "./arch";
+export type {
+  IBlueprintSlot,
+  IBlueprintContractParam,
+  IBlueprintContractOutput,
+  IBlueprintDef,
+  IPermissionVisibility,
+  IElementParamBinding,
+  IElementGrid,
+} from "./arch";
+
 // ── Metadata schemas ────────────────────────────────────────
 export { entities } from "./entities";
 export { features } from "./features";
