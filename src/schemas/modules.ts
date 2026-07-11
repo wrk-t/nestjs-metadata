@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { boolean, json, pgTable, varchar } from "drizzle-orm/pg-core";
+import { boolean, integer, json, pgTable, varchar } from "drizzle-orm/pg-core";
 import { ids } from "../helpers/ids";
 import { timestamps } from "../helpers/timestamps";
 
@@ -47,6 +47,7 @@ export const modules = pgTable("modules", {
   overridesModuleId: varchar("overrides_module_id", { length: 24 }),
 
   // ── Status ─────────────────────────────────────────────────
+  displayOrder: integer("display_order").default(0).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
 
   // ── Metadata ───────────────────────────────────────────────

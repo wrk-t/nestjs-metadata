@@ -14,20 +14,11 @@ import {
 import { ClsService } from "nestjs-cls";
 import { MetadataBaseService } from "../common/metadata-base-service";
 import { TRANSLATION_SERVICE } from "../metadata.types";
-import {
-  screenContexts,
-  screens,
-  screenWidgets,
-  widgetContracts,
-} from "../schemas";
-import type {
-  IWidgetParamBinding,
-  IWidgetParam,
-} from "../modules/screen-widgets/types";
+import { screenContexts, screens, screenWidgets } from "../schemas";
+import type { IWidgetParamBinding } from "../modules/screen-widgets/types";
 import { ScreensPgRepository } from "../repositories/screens.pg.repository";
 import { ScreenContextsPgRepository } from "../repositories/screen-contexts.pg.repository";
 import { ScreenWidgetsPgRepository } from "../repositories/screen-widgets.pg.repository";
-import { WidgetContractsPgRepository } from "../repositories/widget-contracts.pg.repository";
 
 @Injectable()
 export class ScreensService extends MetadataBaseService<
@@ -47,8 +38,6 @@ export class ScreensService extends MetadataBaseService<
     private readonly screenContextsRepo?: ScreenContextsPgRepository,
     @Optional()
     private readonly screenWidgetsRepo?: ScreenWidgetsPgRepository,
-    @Optional()
-    private readonly widgetContractsRepo?: WidgetContractsPgRepository,
     @Optional() private readonly cls?: ClsService,
   ) {
     super(repo, requestContext, translationService);
@@ -181,29 +170,9 @@ export class ScreensService extends MetadataBaseService<
         )
       : [];
 
-    // 4. For each widget, resolve its contract and params
+    // 4. Resolve widget params
     const resolvedWidgets = await Promise.all(
       (Array.isArray(widgets) ? widgets : []).map(async (widget: any) => {
-        let contract: { params: IWidgetParam[] } | null = null;
-
-        if (widget.resourceId && this.widgetContractsRepo) {
-          const specific = await this.widgetContractsRepo.selectOne(
-            eq(widgetContracts.resourceId, widget.resourceId) as SQL,
-          );
-          if (specific) {
-            contract = { params: specific.params as any as IWidgetParam[] };
-          }
-        }
-
-        if (!contract && this.widgetContractsRepo) {
-          const generic = await this.widgetContractsRepo.selectOne(
-            eq(widgetContracts.widgetType, widget.widgetType) as SQL,
-          );
-          if (generic) {
-            contract = { params: generic.params as any as IWidgetParam[] };
-          }
-        }
-
         const resolvedParams: Record<string, unknown> = {};
         const bindings = widget.paramBindings as Record<
           string,
@@ -221,7 +190,6 @@ export class ScreensService extends MetadataBaseService<
 
         return {
           ...widget,
-          contract,
           resolvedParams,
         };
       }),
