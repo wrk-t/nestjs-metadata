@@ -300,14 +300,20 @@ export class ComponentsService extends MetadataBaseService<
       case "field": {
         const fd = (el as any).fieldDefinition;
         const uic = (el as any).uiComponent;
+        // Drizzle's json type may return a string — normalise to object
+        const rawOverrides = el.overrides;
+        const ov =
+          typeof rawOverrides === "string"
+            ? (JSON.parse(rawOverrides) as Record<string, unknown>)
+            : (rawOverrides as Record<string, unknown> | null | undefined);
         return {
           ...base,
           fieldDefinitionId: el.fieldDefinitionId,
           uiComponentId: el.uiComponentId,
-          name: fd?.name ?? null,
+          name: ov?.name ?? fd?.name ?? null,
           type: fd?.type ?? null,
-          label: el.overrides?.displayName ?? fd?.displayName ?? null,
-          overrides: el.overrides,
+          label: ov?.displayName ?? fd?.displayName ?? null,
+          overrides: ov,
         };
       }
 
