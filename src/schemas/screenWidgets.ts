@@ -61,7 +61,7 @@ export const screenWidgets = pgTable("screen_widgets", {
   // ── Type + resource ────────────────────────────────────────
   widgetType: varchar("widget_type", {
     length: 50,
-    enum: ["table", "form", "chart", "info", "report", "tabs", "button"],
+    enum: ["table", "form", "chart", "info", "report", "tabs", "button", "page"],
   }).notNull(),
 
   resourceId: varchar("resource_id", { length: 24 }),

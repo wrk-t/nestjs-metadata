@@ -41,7 +41,6 @@ export const screens = pgTable("screens", {
   // ── Identity ───────────────────────────────────────────────
   name: varchar("name", { length: 100 }).notNull(),
   displayName: varchar("display_name", { length: 255 }).notNull(),
-  description: varchar("description", { length: 1000 }),
   icon: varchar("icon", { length: 100 }),
 
   // ── Tenant isolation ───────────────────────────────────────
