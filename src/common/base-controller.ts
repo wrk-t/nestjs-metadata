@@ -1,4 +1,4 @@
-import { Body, Delete, Get, Param, Patch, Post, Query, Version } from "@nestjs/common";
+import { Body, Delete, Get, Param, Patch, Post, Query, Version, Headers } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
 import { Transactional } from "@nestjs-cls/transactional";
 import { CreatedDto, OkDto } from "@wrk-t/ts-exc";
@@ -35,7 +35,8 @@ export class BaseEntityController<Service extends ScopedBaseService<any, any>> {
   @Get()
   @Version("1")
   @ApiOperation({ summary: "List" })
-  async findMany(@Query() query: any) {
+  async findMany(@Query() query: any, @Headers("accept-language") lang?: string) {
+    if (lang) query._locale = lang.split(",")[0]?.trim();
     const r = await this.svc.findMany(query);
     if (this.paginatedDtoClass) {
       return new OkDto(new this.paginatedDtoClass(r));

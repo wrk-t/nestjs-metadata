@@ -4,6 +4,7 @@ import {
   Param,
   Query,
   Headers,
+  Req,
   Version,
 } from "@nestjs/common";
 import { ApiHeader, ApiOperation, ApiTags } from "@nestjs/swagger";
@@ -20,7 +21,7 @@ export class ComponentsController {
 
   @Get(":id")
   @Version("1")
-  @ApiHeader({ name: "x-lang", required: false })
+  @ApiHeader({ name: "accept-language", required: false })
   @ApiHeader({ name: "x-tenant-id", required: false })
   @ApiOperation({
     summary: "Get component render data",
@@ -32,12 +33,19 @@ export class ComponentsController {
     @Param("id") id: string,
     @Query("include") include?: string,
     @Query("context") context?: string,
-    @Headers("x-lang") lang?: string,
+    @Headers("accept-language") headerLang?: string,
     @Headers("x-tenant-id") tenantId?: string,
+    @Req() req?: any,
   ) {
     if (include === "render") {
+      // Try multiple ways to get the locale header
+      const rawHeader = req?.headers?.["accept-language"];
+      const lang =
+        headerLang ?? (Array.isArray(rawHeader) ? rawHeader[0] : rawHeader);
+      const locale = lang?.split(",")?.[0]?.trim() ?? "en";
+
       const result = await this.svc.getRender(id, {
-        locale: lang ?? "en",
+        locale,
         tenantId: tenantId ?? null,
         context: context ? JSON.parse(context) : undefined,
       });

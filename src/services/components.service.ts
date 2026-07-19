@@ -127,7 +127,7 @@ export class ComponentsService extends MetadataBaseService<
       return new BadRequestDto("Component nesting too deep (max 8 levels)");
     }
 
-    const locale = options?.locale ?? "en";
+    const locale = options?.locale ?? this.requestContext?.getLocale() ?? "en";
     const tenantId = options?.tenantId;
     const ctx = options?.context ?? {};
 
@@ -149,15 +149,25 @@ export class ComponentsService extends MetadataBaseService<
 
     // Resolve translations
     if (this.translationService) {
+      this.logger.log(
+        `getRender: resolving translations for component ${componentId} (locale=${locale}, tenantId=${tenantId})`,
+      );
+      const translated = await this.translationService.resolveTranslations(
+        rendered,
+        locale,
+        tenantId,
+      );
+      this.logger.log(
+        `getRender: translations resolved for component ${componentId}`,
+      );
       return {
-        component: (await this.translationService.resolveTranslations(
-          rendered,
-          locale,
-          tenantId,
-        )) as IRenderedComponent,
+        component: translated as IRenderedComponent,
       };
     }
 
+    this.logger.warn(
+      `getRender: no translationService available for component ${componentId}`,
+    );
     return { component: rendered };
   }
 
@@ -287,6 +297,12 @@ export class ComponentsService extends MetadataBaseService<
    * Convert a single element row into the rendered element shape.
    */
   private toRenderedElement(el: TElementRow): IRenderedElement {
+    const rawGrid = (el as any).grid;
+    const grid =
+      typeof rawGrid === "string"
+        ? (JSON.parse(rawGrid) as IRenderedElement["grid"])
+        : (rawGrid as IRenderedElement["grid"] | null | undefined);
+
     const base: IRenderedElement = {
       id: el.id,
       slotName: el.slotName,
@@ -294,6 +310,7 @@ export class ComponentsService extends MetadataBaseService<
       displayOrder: el.displayOrder,
       isActive: el.isActive,
       meta: el.meta,
+      grid: grid ?? null,
     };
 
     switch (el.elementType) {

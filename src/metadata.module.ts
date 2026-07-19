@@ -1,4 +1,5 @@
 import { DynamicModule, Module } from "@nestjs/common";
+import { ClsModule } from "nestjs-cls";
 import { RequestContext, AccessControlService } from "@wrk-t/nestjs-core";
 import {
   METADATA_OPTIONS,
@@ -89,6 +90,7 @@ export class MetadataModule {
       global: true,
       module: MetadataModule,
       imports: [
+        ClsModule,
         EntitiesModule,
         FieldDefinitionsModule,
         UiComponentsModule,
