@@ -18,6 +18,7 @@ import type {
   IRenderedComponent,
   IRenderedElement,
 } from "./components.types";
+import type { IPermissionVisibility } from "../schemas";
 
 // ──────────────────────────────────────────────────────────────────
 // ComponentsService — unified render pipeline
@@ -286,6 +287,10 @@ export class ComponentsService extends MetadataBaseService<
       overridable: blueprint.overridable,
       contract: blueprint.contract,
       slotsFilled,
+      visibleToPermissions: component.visibleToPermissions as
+        | IPermissionVisibility[]
+        | null
+        | undefined,
       tenantId: component.tenantId,
       isActive: component.isActive,
       isSystem: component.isSystem,
@@ -369,6 +374,10 @@ export class ComponentsService extends MetadataBaseService<
                 overridable: refBp?.overridable ?? null,
                 contract: refBp?.contract ?? null,
                 slotsFilled: refSlotsFilled,
+                visibleToPermissions: ref.visibleToPermissions as
+                  | IPermissionVisibility[]
+                  | null
+                  | undefined,
                 tenantId: ref.tenantId,
                 isActive: ref.isActive,
                 isSystem: ref.isSystem,

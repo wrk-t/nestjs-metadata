@@ -60,6 +60,13 @@ export interface IRenderedComponent {
   // Children, grouped by slot
   slotsFilled: Record<string, IRenderedElement[]>;
 
+  // Permission-based visibility
+  visibleToPermissions?: Array<{
+    resource: string;
+    action: string;
+    scope?: "own" | "tenant" | "all";
+  }> | null;
+
   // Status
   tenantId: string | null;
   isActive: boolean;
