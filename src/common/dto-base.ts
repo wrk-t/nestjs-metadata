@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsDate, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsDate, IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
 
 // ── Shared DTO bases (replaces project-specific ~config/database/main/dtos) ──
 
@@ -45,6 +45,11 @@ export class BasePagableQueryDto {
 	@IsString()
 	@IsOptional()
 	search?: string;
+
+	@ApiProperty({ required: false, enum: ["asc", "desc"], default: "desc" })
+	@IsEnum({ asc: "asc", desc: "desc" })
+	@IsOptional()
+	sortOrder?: "asc" | "desc" = "desc";
 }
 
 export class PaginatedDto<T> {
