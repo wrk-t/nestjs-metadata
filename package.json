@@ -9,8 +9,13 @@
     "url": "https://github.com/wrk-t/nestjs-metadata"
   },
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
+	"types": "./dist/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"schemas": ["./dist/schemas/index.d.ts"]
+		}
+	},
+	"exports": {
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.js",

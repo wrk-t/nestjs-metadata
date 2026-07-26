@@ -36,7 +36,6 @@ export { uiComponents } from "./uiComponents";
 
 // ── Navigation (modules, screens, screen widgets) ───────────
 export { modules, modulesRelations } from "./modules";
-export { moduleItems, moduleItemsRelations } from "./moduleItems";
 export { screens, screensRelations } from "./screens";
 export { screenContexts, screenContextsRelations } from "./screenContexts";
 export type { IScreenContextParam } from "./screenContexts";
