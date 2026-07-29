@@ -1,6 +1,13 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsDate, IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
+import {
+	IsDate,
+	IsEnum,
+	IsInt,
+	IsOptional,
+	IsString,
+	Min,
+} from "class-validator";
 
 // ── Shared DTO bases (replaces project-specific ~config/database/main/dtos) ──
 
@@ -80,5 +87,14 @@ export class PaginatedDto<T> {
 		this.page = result.page;
 		this.limit = result.limit;
 		this.totalPages = result.totalPages;
+	}
+}
+
+export class ListDto<T> {
+	@ApiProperty()
+	data?: T[];
+
+	constructor(data: T[]) {
+		this.data = data;
 	}
 }

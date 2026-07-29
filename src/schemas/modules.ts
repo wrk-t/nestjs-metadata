@@ -50,6 +50,10 @@ export const modules = pgTable("modules", {
   displayOrder: integer("display_order").default(0).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
 
+  // ── Visibility ─────────────────────────────────────────────
+  // When true, only users with isSuperAdmin can see this module.
+  visibleToSuperAdmin: boolean("visible_to_super_admin").default(false).notNull(),
+
   // ── Metadata ───────────────────────────────────────────────
   meta: json("meta").$type<Record<string, unknown> | null>(),
 });
