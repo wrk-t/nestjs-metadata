@@ -176,26 +176,44 @@ export class ComponentsService extends MetadataBaseService<
 
   /**
    * Resolve component_ref and renderer elements by fetching their
-   * referenced data. Called only one level deep at a time to avoid
-   * N+1 on deeply nested trees.
+   * referenced data.
+   *
+   * component_ref chains are walked iteratively (breadth-first) so
+   * arbitrarily deep trees resolve — e.g. page → tabs → form → section
+   * (3 levels). A visited set guards against reference cycles and
+   * diamond shapes, and the depth cap mirrors getRender's own guard.
    */
   private async resolveRefs(
     data: TComponentRenderData,
     tenantId: string | null | undefined,
     _depth: number,
   ): Promise<void> {
-    // ── First level: resolve direct children ──────────────
-    const compRefEls = data.elements.filter(
-      (e) => e.elementType === "component_ref" && e.referencedComponentId,
-    );
-    if (compRefEls.length > 0) {
-      const ids = compRefEls.map((e) => e.referencedComponentId!);
+    const MAX_REF_DEPTH = 8;
+    const visited = new Set<string>();
+
+    // Elements whose component_ref children need resolving at this level.
+    // Each iteration replaces this with the elements of the components
+    // resolved in the previous iteration.
+    let frontier: TElementRow[] = data.elements;
+
+    for (let depth = 0; depth < MAX_REF_DEPTH; depth++) {
+      const compRefEls = frontier.filter(
+        (e) => e.elementType === "component_ref" && e.referencedComponentId,
+      );
+      if (compRefEls.length === 0) break;
+
+      const ids = [
+        ...new Set(compRefEls.map((e) => e.referencedComponentId!)),
+      ].filter((id) => !visited.has(id));
+      if (ids.length === 0) break;
+
       const refs = await this.repo.findComponentsByIds(ids);
       const batchData = await this.repo.batchResolveRefs(
         ids,
         tenantId ?? undefined,
       );
       const refMap = new Map(refs.map((r) => [r.id, r]));
+
       for (const el of compRefEls) {
         const refComp = refMap.get(el.referencedComponentId!);
         const refData = batchData.get(el.referencedComponentId!);
@@ -204,39 +222,14 @@ export class ComponentsService extends MetadataBaseService<
         (el as any).referencedElements = refData?.elements ?? [];
       }
 
-      // ── Second level: resolve children of resolved components ─
-      const grandchildIds: string[] = [];
-      for (const [_id, refData] of batchData) {
-        for (const el of refData.elements) {
-          if (el.elementType === "component_ref" && el.referencedComponentId) {
-            grandchildIds.push(el.referencedComponentId!);
-          }
-        }
-      }
-      if (grandchildIds.length > 0) {
-        const gcRefs = await this.repo.findComponentsByIds(grandchildIds);
-        const gcBatch = await this.repo.batchResolveRefs(
-          grandchildIds,
-          tenantId ?? undefined,
-        );
-        const gcRefMap = new Map(gcRefs.map((r) => [r.id, r]));
+      for (const id of ids) visited.add(id);
 
-        // Attach resolved data to the grandchild elements
-        for (const [_id, refData] of batchData) {
-          for (const el of refData.elements) {
-            if (
-              el.elementType === "component_ref" &&
-              el.referencedComponentId
-            ) {
-              const gc = gcRefMap.get(el.referencedComponentId!);
-              const gcData = gcBatch.get(el.referencedComponentId!);
-              (el as any).referencedComponent = gc ?? null;
-              (el as any).referencedBlueprint = gcData?.blueprint ?? null;
-              (el as any).referencedElements = gcData?.elements ?? [];
-            }
-          }
-        }
+      // Next level: all elements of the just-resolved components
+      const next: TElementRow[] = [];
+      for (const refData of batchData.values()) {
+        next.push(...refData.elements);
       }
+      frontier = next;
     }
 
     // ── Renderer blueprints ───────────────────────────────

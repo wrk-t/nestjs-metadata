@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import { boolean, integer, json, pgTable, varchar } from "drizzle-orm/pg-core";
 import { ids } from "../helpers/ids";
 import { timestamps } from "../helpers/timestamps";
+import type { TenantRequirement } from "../common/tenant-requirement";
 
 /**
  * MODULES
@@ -53,6 +54,15 @@ export const modules = pgTable("modules", {
   // ── Visibility ─────────────────────────────────────────────
   // When true, only users with isSuperAdmin can see this module.
   visibleToSuperAdmin: boolean("visible_to_super_admin").default(false).notNull(),
+
+  // ── Tenant-membership visibility ──────────────────────────
+  // Controls whether the module is returned based on the user's
+  // tenant membership: "any" (default), "tenant" (user must belong
+  // to a tenant), or "standalone" (user must have no tenant).
+  tenantRequirement: varchar("tenant_requirement", { length: 20 })
+    .$type<TenantRequirement>()
+    .default("any")
+    .notNull(),
 
   // ── Metadata ───────────────────────────────────────────────
   meta: json("meta").$type<Record<string, unknown> | null>(),

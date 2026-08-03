@@ -48,7 +48,7 @@ export class ComponentsPgRepository extends Repository<
   any,
   typeof archComponents
 > {
-  protected override tableName = "arch_components";
+  protected override tableName = "archComponents";
 
   override applyScope(condition: SQL | undefined): SQL | undefined {
     return this.resolveScopeFilter(condition, {
@@ -200,6 +200,35 @@ export class ComponentsPgRepository extends Repository<
         })) ?? null
       );
     }, "read");
+  }
+
+  /**
+   * Fetch a single blueprint by name (e.g. "table", "screenLayoutGeneral").
+   */
+  async findBlueprintByName(name: string): Promise<TBlueprintRow | null> {
+    return await this.execute(async (db) => {
+      return (
+        (await db.query.archComponentBlueprints.findFirst({
+          where: eq(archComponentBlueprints.name, name),
+        })) ?? null
+      );
+    }, "read");
+  }
+
+  /**
+   * Insert arch component elements, ignoring rows whose CUID already
+   * exists (idempotent — used by the metadata module bootstrap).
+   */
+  async insertElements(
+    rows: (typeof archComponentElements.$inferInsert)[],
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    await this.execute(async (db) => {
+      await db
+        .insert(archComponentElements)
+        .values(rows)
+        .onConflictDoNothing();
+    }, "create");
   }
 
   // ── Element resolution helpers ─────────────────────────────────

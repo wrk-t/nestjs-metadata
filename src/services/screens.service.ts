@@ -5,7 +5,7 @@ import {
   NotFoundDto,
 } from "@wrk-t/ts-exc";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
-import { eq, SQL } from "drizzle-orm";
+import { eq, inArray, SQL } from "drizzle-orm";
 import {
   AccessControlService,
   RequestContext,
@@ -13,12 +13,17 @@ import {
 } from "@wrk-t/nestjs-core";
 import { ClsService } from "nestjs-cls";
 import { MetadataBaseService } from "../common/metadata-base-service";
+import {
+  satisfiesTenantRequirement,
+  type TenantRequirement,
+} from "../common/tenant-requirement";
 import { TRANSLATION_SERVICE } from "../metadata.types";
-import { screenContexts, screens, screenWidgets } from "../schemas";
+import { modules, screenContexts, screens, screenWidgets } from "../schemas";
 import type { IWidgetParamBinding } from "../modules/screen-widgets/types";
 import { ScreensPgRepository } from "../repositories/screens.pg.repository";
 import { ScreenContextsPgRepository } from "../repositories/screen-contexts.pg.repository";
 import { ScreenWidgetsPgRepository } from "../repositories/screen-widgets.pg.repository";
+import { ModulesPgRepository } from "../repositories/modules.pg.repository";
 
 @Injectable()
 export class ScreensService extends MetadataBaseService<
@@ -38,6 +43,7 @@ export class ScreensService extends MetadataBaseService<
     private readonly screenContextsRepo?: ScreenContextsPgRepository,
     @Optional()
     private readonly screenWidgetsRepo?: ScreenWidgetsPgRepository,
+    @Optional() private readonly modulesRepo?: ModulesPgRepository,
     @Optional() private readonly cls?: ClsService,
   ) {
     super(repo, requestContext, translationService);
@@ -98,31 +104,76 @@ export class ScreensService extends MetadataBaseService<
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // List — filtered by visibleToPermissions
+  // List — filtered by tenant-membership + permission visibility
   // ──────────────────────────────────────────────────────────────────
 
-  override async findMany(filters: any) {
-    const result = await super.findMany(filters);
-    if (result instanceof HttpException) return result;
+  	override async findMany(filters: any) {
+  		const result = await super.findMany(filters);
+  		if (result instanceof HttpException) return result;
 
-    const scopeMap = this.resolveScopeMap();
-    if (Object.keys(scopeMap).length === 0) return result;
+  		const tenantId = this.requestContext?.getTenantId();
+  		const isSuperAdmin = this.requestContext?.getIsSuperAdmin() ?? false;
+  		const moduleReqs = await this.resolveModuleRequirements(
+  			result.data.map((s: any) => s.moduleId),
+  		);
 
-    result.data = result.data.filter((s: any) => {
-      const visPerms = s.visibleToPermissions as Array<{
-        resource: string;
-        action: string;
-        scope?: "own" | "tenant" | "all";
-      }> | null;
-      if (!visPerms?.length) return true;
-      return visPerms.every((req) => {
-        const userScopes: string[] = scopeMap[req.resource] ?? [];
-        if (!req.scope) return userScopes.length > 0;
-        return userScopes.includes(req.scope);
-      });
+  		const scopeMap = this.resolveScopeMap();
+  		const hasScopeMap = Object.keys(scopeMap).length > 0;
+
+  		result.data = result.data.filter((s: any) => {
+  			// Tenant-membership visibility (own requirement + module's)
+  			// Super admins bypass the tenant requirement entirely.
+  			if (
+  				!isSuperAdmin &&
+  				!satisfiesTenantRequirement(s.tenantRequirement, tenantId)
+  			) {
+  				return false;
+  			}
+  			if (
+  				!isSuperAdmin &&
+  				!satisfiesTenantRequirement(moduleReqs.get(s.moduleId), tenantId)
+  			) {
+  				return false;
+  			}
+
+      // Permission-based visibility
+      if (hasScopeMap) {
+        const visPerms = s.visibleToPermissions as Array<{
+          resource: string;
+          action: string;
+          scope?: "own" | "tenant" | "all";
+        }> | null;
+        if (visPerms?.length) {
+          const allowed = visPerms.every((req) => {
+            const userScopes: string[] = scopeMap[req.resource] ?? [];
+            if (!req.scope) return userScopes.length > 0;
+            return userScopes.includes(req.scope);
+          });
+          if (!allowed) return false;
+        }
+      }
+
+      return true;
     });
 
     return result;
+  }
+
+  /** Map moduleId → tenantRequirement for the given screen moduleIds. */
+  private async resolveModuleRequirements(
+    moduleIds: Array<string | null>,
+  ): Promise<Map<string, TenantRequirement>> {
+    const map = new Map<string, TenantRequirement>();
+    if (!this.modulesRepo) return map;
+    const ids = [...new Set(moduleIds.filter((id): id is string => Boolean(id)))];
+    if (ids.length === 0) return map;
+    const rows = await this.modulesRepo.selectMany(
+      inArray(modules.id, ids) as SQL,
+    );
+    for (const row of rows ?? []) {
+      map.set(row.id, row.tenantRequirement);
+    }
+    return map;
   }
 
   private resolveScopeMap(): Record<string, string[]> {
@@ -135,6 +186,32 @@ export class ScreensService extends MetadataBaseService<
     // 1. Load screen
     const screen = await this.repo.selectOneById(screenId);
     if (!screen) return new NotFoundDto("TODO");
+
+    		// 1.25 Check tenant-membership visibility (screen + its module)
+    		const tenantId = this.requestContext?.getTenantId();
+    		const isSuperAdmin = this.requestContext?.getIsSuperAdmin() ?? false;
+    		if (
+    			!isSuperAdmin &&
+    			!satisfiesTenantRequirement(screen.tenantRequirement, tenantId)
+    		) {
+    			return new ForbiddenDto("errors.forbidden").details({
+    				reason: "screen_tenant_requirement",
+    				required: screen.tenantRequirement,
+    			});
+    		}
+    		if (this.modulesRepo) {
+    			const mod = await this.modulesRepo.selectOneById(screen.moduleId);
+    			if (
+    				mod &&
+    				!isSuperAdmin &&
+    				!satisfiesTenantRequirement(mod.tenantRequirement, tenantId)
+    			) {
+    				return new ForbiddenDto("errors.forbidden").details({
+    					reason: "module_tenant_requirement",
+    					required: mod.tenantRequirement,
+    				});
+    			}
+    }
 
     // 1.5 Check permission-based visibility
     const visPerms = screen.visibleToPermissions as Array<{

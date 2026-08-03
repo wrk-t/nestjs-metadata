@@ -1,4 +1,5 @@
 import type { Type } from "@nestjs/common";
+import type { ClsService } from "nestjs-cls";
 import type {
   ILogService,
   ITranslationService,
@@ -44,6 +45,18 @@ export interface MetadataModuleOptions {
 
   /** Extra NestJS modules to import (e.g. UsersModule for cross-module deps). */
   imports?: Type<unknown>[];
+
+  /**
+   * The ClsService singleton used by the host application's CLS
+   * middleware. When provided, the metadata services' RequestContext
+   * reads/writes the SAME per-request store as the host app.
+   *
+   * This is needed because the package may resolve a different physical
+   * copy of nestjs-cls (pnpm store) than the host, and each copy keeps
+   * its own CLS singleton. Omit it when the host doesn't populate a
+   * request context.
+   */
+  cls?: ClsService;
 
   /** Extra providers to register. */
   providers?: Type<unknown>[];

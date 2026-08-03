@@ -3,6 +3,7 @@ import { boolean, integer, json, pgTable, varchar } from "drizzle-orm/pg-core";
 import { ids } from "../helpers/ids";
 import { timestamps } from "../helpers/timestamps";
 import { modules } from "./modules";
+import type { TenantRequirement } from "../common/tenant-requirement";
 
 /**
  * SCREENS
@@ -67,6 +68,17 @@ export const screens = pgTable("screens", {
       scope?: "own" | "tenant" | "all";
     }>
   >(),
+
+  // ── Tenant-membership visibility ──────────────────────────
+  // Controls whether the screen is returned based on the user's
+  // tenant membership: "any" (default), "tenant" (user must belong
+  // to a tenant), or "standalone" (user must have no tenant).
+  // Screens are also hidden when their module's requirement is
+  // stricter than the user's mode.
+  tenantRequirement: varchar("tenant_requirement", { length: 20 })
+    .$type<TenantRequirement>()
+    .default("any")
+    .notNull(),
 
   // ── Status ─────────────────────────────────────────────────
   isActive: boolean("is_active").default(true).notNull(),

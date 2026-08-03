@@ -8,6 +8,13 @@ export {
   PaginatedDto,
 } from "./common/dto-base";
 
+// ── Tenant-membership visibility ───────────────────────────
+export {
+  satisfiesTenantRequirement,
+  DEFAULT_TENANT_REQUIREMENT,
+} from "./common/tenant-requirement";
+export type { TenantRequirement } from "./common/tenant-requirement";
+
 // ── Module types ───────────────────────────────────────────
 export * from "./modules";
 
@@ -35,5 +42,6 @@ export { ComponentsPgRepository } from "./repositories/components.pg.repository"
 
 // ── Module ────────────────────────────────────────────────
 export { MetadataModule } from "./metadata.module";
+export { MetadataModuleBootstrapService } from "./bootstrap/metadata-module.bootstrap";
 export { METADATA_OPTIONS, TRANSLATION_SERVICE } from "./metadata.types";
 export type { MetadataModuleOptions } from "./metadata.types";

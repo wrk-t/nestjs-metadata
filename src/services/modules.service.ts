@@ -1,7 +1,12 @@
-import { BadRequestDto, ForbiddenDto } from "@wrk-t/ts-exc";
+import { BadRequestDto, ForbiddenDto, HttpException } from "@wrk-t/ts-exc";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
-import { AccessControlService, RequestContext, ITranslationService } from "@wrk-t/nestjs-core";
+import {
+  AccessControlService,
+  RequestContext,
+  ITranslationService,
+} from "@wrk-t/nestjs-core";
 import { MetadataBaseService } from "../common/metadata-base-service";
+import { satisfiesTenantRequirement } from "../common/tenant-requirement";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 import { modules } from "../schemas";
 import { ModulesPgRepository } from "../repositories/modules.pg.repository";
@@ -34,7 +39,9 @@ export class ModulesService extends MetadataBaseService<
     if (!isAllTenants) {
       const userTenantId = this.requestContext?.getTenantId();
       if (!userTenantId) {
-        return new ForbiddenDto("You must belong to a tenant to create a module");
+        return new ForbiddenDto(
+          "You must belong to a tenant to create a module",
+        );
       }
       if (
         data.tenantId !== undefined &&
@@ -74,5 +81,27 @@ export class ModulesService extends MetadataBaseService<
     _existing: typeof modules.$inferSelect,
   ): any {
     return this.access?.requireScope("modules", "all") as any;
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // List — filtered by tenant-membership visibility
+  // ────────────────────────────────────────────────────────────────
+
+  override async findMany(filters: any) {
+    const result = await super.findMany(filters);
+    if (result instanceof HttpException) return result;
+
+    const tenantId = this.requestContext?.getTenantId();
+    const isSuperAdmin = this.requestContext?.getIsSuperAdmin() ?? false;
+    result.data = result.data.filter((m: any) => {
+      // visibleToSuperAdmin modules are only returned to super admins
+      if (m.visibleToSuperAdmin && !isSuperAdmin) return false;
+      return (
+        isSuperAdmin ||
+        satisfiesTenantRequirement(m.tenantRequirement, tenantId)
+      );
+    });
+
+    return result;
   }
 }

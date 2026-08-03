@@ -1,10 +1,12 @@
 import { DynamicModule, Module } from "@nestjs/common";
-import { AccessControlService } from "@wrk-t/nestjs-core";
+import { AccessControlService, RequestContext } from "@wrk-t/nestjs-core";
+import { ClsService, ClsServiceManager } from "nestjs-cls";
 import {
-	METADATA_OPTIONS,
-	type MetadataModuleOptions,
-	TRANSLATION_SERVICE,
+  METADATA_OPTIONS,
+  type MetadataModuleOptions,
+  TRANSLATION_SERVICE,
 } from "./metadata.types";
+import { MetadataModuleBootstrapService } from "./bootstrap/metadata-module.bootstrap";
 import { ComponentsModule } from "./modules/components/components.module";
 // ── Controller modules ──
 import { EntitiesModule } from "./modules/entities/entities.module";
@@ -38,80 +40,97 @@ import { UiComponentsService } from "./services/ui-components.service";
 
 @Module({})
 export class MetadataModule {
-	static forRoot(options: MetadataModuleOptions): DynamicModule {
-		const features = {
-			multiTenant: true,
-			accessControl: true,
-			softDelete: true,
-			fieldVisibility: true,
-			translations: false,
-			...options.features,
-		};
+  static forRoot(options: MetadataModuleOptions): DynamicModule {
+    const features = {
+      multiTenant: true,
+      accessControl: true,
+      softDelete: true,
+      fieldVisibility: true,
+      translations: false,
+      ...options.features,
+    };
 
-		const providers: NonNullable<DynamicModule["providers"]> = [
-			{ provide: METADATA_OPTIONS, useValue: { ...options, features } },
-			// ── Services ──
-			EntitiesService,
-			FieldDefinitionsService,
-			UiComponentsService,
-			ScreensService,
-			ScreenWidgetsService,
-			ScreenContextsService,
-			ModulesService,
-			FeaturesService,
-			ComponentsService,
-			// ── Repositories ──
-			EntitiesPgRepository,
-			FieldDefinitionsPgRepository,
-			UiComponentsPgRepository,
-			ScreensPgRepository,
-			ScreenWidgetsPgRepository,
-			ScreenContextsPgRepository,
-			ModulesPgRepository,
-			FeaturesPgRepository,
-			ComponentsPgRepository,
-		];
+    const providers: NonNullable<DynamicModule["providers"]> = [
+      { provide: METADATA_OPTIONS, useValue: { ...options, features } },
+      // ── Context ──
+      // Resolve the @Optional() RequestContext injected by the
+      // services and bind it to the host app's CLS store so tenant-
+      // aware filters see the caller's tenant. The hosting app is
+      // responsible for populating the store (auth guard or
+      // request middleware). `options.cls` must be the host's own
+      // ClsService singleton — a different physical nestjs-cls copy
+      // would have its own isolated store.
+      RequestContext,
+      {
+        provide: ClsService,
+        useValue:
+          (options.cls as ClsService | undefined) ??
+          ClsServiceManager.getClsService(),
+      },
+      // ── Bootstrap (metadata module self-registration) ──
+      MetadataModuleBootstrapService,
+      // ── Services ──
+      EntitiesService,
+      FieldDefinitionsService,
+      UiComponentsService,
+      ScreensService,
+      ScreenWidgetsService,
+      ScreenContextsService,
+      ModulesService,
+      FeaturesService,
+      ComponentsService,
+      // ── Repositories ──
+      EntitiesPgRepository,
+      FieldDefinitionsPgRepository,
+      UiComponentsPgRepository,
+      ScreensPgRepository,
+      ScreenWidgetsPgRepository,
+      ScreenContextsPgRepository,
+      ModulesPgRepository,
+      FeaturesPgRepository,
+      ComponentsPgRepository,
+    ];
 
-		if (features.accessControl) {
-			providers.push(AccessControlService);
-		}
+    if (features.accessControl) {
+      providers.push(AccessControlService);
+    }
 
-		// ── Translation service ──────────────────────────────────────
-		if (options.services?.translationService) {
-			providers.push({
-				provide: TRANSLATION_SERVICE,
-				useClass: options.services.translationService,
-			});
-		}
+    // ── Translation service ──────────────────────────────────────
+    if (options.services?.translationService) {
+      providers.push({
+        provide: TRANSLATION_SERVICE,
+        useClass: options.services.translationService,
+      });
+    }
 
-		return {
-			global: true,
-			module: MetadataModule,
-			imports: [
-				EntitiesModule,
-				FieldDefinitionsModule,
-				UiComponentsModule,
-				ScreensModule,
-				ScreenWidgetsModule,
-				ScreenContextsModule,
-				ModulesModule,
-				FeaturesModule,
-				ComponentsModule,
-				...(options.imports ?? []),
-			],
-			providers,
-			exports: [
-				EntitiesService,
-				FieldDefinitionsService,
-				UiComponentsService,
-				ScreensService,
-				ScreenWidgetsService,
-				ScreenContextsService,
-				ModulesService,
-				FeaturesService,
-				ComponentsService,
-				...(features.accessControl ? [AccessControlService] : []),
-			],
-		};
-	}
+    return {
+      global: true,
+      module: MetadataModule,
+      imports: [
+        EntitiesModule,
+        FieldDefinitionsModule,
+        UiComponentsModule,
+        ScreensModule,
+        ScreenWidgetsModule,
+        ScreenContextsModule,
+        ModulesModule,
+        FeaturesModule,
+        ComponentsModule,
+        ...(options.imports ?? []),
+      ],
+      providers,
+      exports: [
+        EntitiesService,
+        FieldDefinitionsService,
+        UiComponentsService,
+        ScreensService,
+        ScreenWidgetsService,
+        ScreenContextsService,
+        ModulesService,
+        FeaturesService,
+        ComponentsService,
+        ...(features.accessControl ? [AccessControlService] : []),
+      ],
+    };
+  }
 }
