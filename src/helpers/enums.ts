@@ -4,6 +4,7 @@ import { pgEnum } from "drizzle-orm/pg-core";
 
 export const FIELD_TYPES = [
   "text",
+  "color",
   "textarea",
   "number",
   "email",
