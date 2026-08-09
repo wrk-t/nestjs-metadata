@@ -4,7 +4,7 @@ import {
   InjectTransactionHost,
   TransactionHost,
 } from "@nestjs-cls/transactional";
-import { asc, eq, inArray, isNull, or, SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, SQL } from "drizzle-orm";
 import { Repository } from "@wrk-t/nestjs-core";
 import type { ILogService } from "@wrk-t/nestjs-core";
 import {
@@ -120,8 +120,10 @@ export class ComponentsPgRepository extends Repository<
         .select()
         .from(archComponentElements)
         .where(
-          eq(archComponentElements.componentId, componentId),
-          elementsWhere,
+          and(
+            eq(archComponentElements.componentId, componentId),
+            elementsWhere,
+          ),
         )
         .orderBy(
           asc(archComponentElements.slotName),
@@ -178,8 +180,10 @@ export class ComponentsPgRepository extends Repository<
           .select()
           .from(archComponentOverrides)
           .where(
-            eq(archComponentOverrides.componentId, componentId),
-            eq(archComponentOverrides.tenantId, tenantId),
+            and(
+              eq(archComponentOverrides.componentId, componentId),
+              eq(archComponentOverrides.tenantId, tenantId),
+            ),
           );
       }
 
