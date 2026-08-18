@@ -42,7 +42,7 @@
     "prepublishOnly": "pnpm build"
   },
   "peerDependencies": {
-    "@wrk-t/nestjs-core": ">=0.1",
+    "@wrk-t/nestjs-core": "workspace:*",
     "@wrk-t/ts-exc": ">=0.1",
     "@nestjs-cls/transactional": ">=3",
     "@nestjs/common": ">=10",
@@ -76,10 +76,5 @@
     "drizzle",
     "ui-generation",
     "multi-tenant"
-  ],
-  "pnpm": {
-    "overrides": {
-      "@nestjs/common": "11.1.24"
-    }
-  }
+  ]
 }

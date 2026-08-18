@@ -64,7 +64,7 @@ export class PaginatedDto<T> {
 	data: T[];
 
 	@ApiProperty()
-	total: number;
+	total: number | null;
 
 	@ApiProperty()
 	page: number;
