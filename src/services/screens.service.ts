@@ -139,28 +139,42 @@ export class ScreensService extends MetadataBaseService<
   				return false;
   			}
 
-      // Permission-based visibility
-      if (hasScopeMap) {
-        const visPerms = s.visibleToPermissions as Array<{
-          resource: string;
-          action: string;
-          scope?: "own" | "tenant" | "all";
-        }> | null;
-        if (visPerms?.length) {
-          const allowed = visPerms.every((req) => {
-            const userScopes: string[] = scopeMap[req.resource] ?? [];
-            if (!req.scope) return userScopes.length > 0;
-            return userScopes.includes(req.scope);
-          });
-          if (!allowed) return false;
-        }
-      }
+      			// Permission-based visibility
+      			if (hasScopeMap) {
+      				const visPerms = s.visibleToPermissions as Array<{
+      					resource: string;
+      					action: string;
+      					scope?: "own" | "tenant" | "all";
+      				}> | null;
+      				if (visPerms?.length) {
+      					const allowed = visPerms.every((req) =>
+      						this.scopeSatisfies(scopeMap[req.resource] ?? [], req.scope),
+      					);
+      					if (!allowed) return false;
+      				}
+      			}
 
-      return true;
-    });
+      			return true;
+      		});
 
-    return result;
-  }
+      		return result;
+      	}
+
+      	/**
+      	 * True when the user's scopes satisfy a required visibility scope.
+      	 * Scopes are hierarchical: "all" ⊇ "tenant" ⊇ "own" (matches the
+      	 * frontend checkComponentPermission) — a super admin with "all" still
+      	 * sees screens marked scope "tenant".
+      	 */
+      	private scopeSatisfies(
+      		userScopes: string[],
+      		required?: "own" | "tenant" | "all",
+      	): boolean {
+      		if (userScopes.length === 0) return false;
+      		if (!required || required === "own") return true;
+      		if (required === "all") return userScopes.includes("all");
+      		return userScopes.includes("all") || userScopes.includes("tenant");
+      	}
 
   /** Map moduleId → tenantRequirement for the given screen moduleIds. */
   private async resolveModuleRequirements(
@@ -222,19 +236,17 @@ export class ScreensService extends MetadataBaseService<
       action: string;
       scope?: "own" | "tenant" | "all";
     }> | null;
-    if (visPerms?.length) {
-      const scopeMap = this.resolveScopeMap();
-      const hasAll = visPerms.every((req) => {
-        const userScopes: string[] = scopeMap[req.resource] ?? [];
-        if (!req.scope) return userScopes.length > 0;
-        return userScopes.includes(req.scope);
-      });
-      if (!hasAll)
-        return new ForbiddenDto("errors.forbidden").details({
-          reason: "screen_visibility",
-          requiredPermissions: visPerms,
-        });
-    }
+    		if (visPerms?.length) {
+    			const scopeMap = this.resolveScopeMap();
+    			const hasAll = visPerms.every((req) =>
+    				this.scopeSatisfies(scopeMap[req.resource] ?? [], req.scope),
+    			);
+    			if (!hasAll)
+    				return new ForbiddenDto("errors.forbidden").details({
+    					reason: "screen_visibility",
+    					requiredPermissions: visPerms,
+    				});
+    		}
 
     // 2. Load screen context (optional)
     const context = this.screenContextsRepo

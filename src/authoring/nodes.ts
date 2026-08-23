@@ -1,35 +1,62 @@
+import type { IPermissionVisibility } from "../schemas";
+import { SeedContext } from "./compile";
 import type {
-	IElementGrid,
-	IElementParamBinding,
-	IPermissionVisibility,
-} from "../schemas";
-import type {
+	IAvatarConfig,
+	IAuditHistoryConfig,
+	IBoxConfig,
+	IButtonConfig,
+	IChartConfig,
 	IContainerConfig,
+	IDateRangePickerConfig,
+	IFieldConfig,
 	IFormConfig,
 	IGridConfig,
 	IInfoConfig,
-	ISectionConfig,
+	ILayoutConfig,
+	ILinkConfig,
+	IListConfig,
+	ILogoUploaderConfig,
+	IPerMethodPricingConfig,
+	IRawJsonConfig,
+	IScreenTreeConfig,
 	IStackConfig,
+	IStageActionsConfig,
+	IStateContextConfig,
+	ISwaggerEditorConfig,
 	ITableConfig,
 	ITabsConfig,
-	IFieldOverride,
+	ITestTabConfig,
+	ITypographyConfig,
+	IPaperConfig,
+	FieldType,
 } from "./config-types";
+import { getBlueprintId } from "./registry";
 
 // ──────────────────────────────────────────────────────────────────
 // Authoring node model — the tree the UI-builder will edit.
 //
-//   Component → a blueprint instance (arch_components row) + children
-//   Field     → a field element (edge, no component row)
-//   Renderer  → a leaf renderer element (edge, rendererBlueprintId)
-//   Ref       → embed an existing component by id (edge, component_ref)
+//   Component  → a blueprint instance (arch_components row) + children
+//                filling its default slot (React-style: a single child,
+//                an array, or nothing). Extra slots (e.g. Form `actions`)
+//                are declared as node-typed config keys.
+//   FieldNode  → a leaf field (TextField/PasswordField/…) that
+//                self-provisions its field_definitions row + element.
+//   Renderer   → a leaf renderer element (badge, chart-cell, …).
+//   number     → a bare component id: embed an existing component by
+//                reference (replaces `ref()`).
 //
-// Edge-level presentation lives on the node (chains return `this`),
-// so the tree reads top-down exactly as it renders.
+// Seeding is embedded in the classes: constructors register their rows
+// into the active SeedContext; `SeedContext.collect()` finalizes the
+// bundle (roots get displayOrder 1).
 // ──────────────────────────────────────────────────────────────────
 
-export type SlotChildren = Record<string, AuthoringNode[]>;
+export type AuthoringChild = Component | FieldNode | Renderer | number;
+export type Children = AuthoringChild | AuthoringChild[] | undefined;
 
-export type NodeKind = "component" | "field" | "renderer" | "ref";
+export function normalizeChildren(children: Children): AuthoringChild[] {
+	if (children == null) return [];
+	return Array.isArray(children) ? children : [children];
+}
 
 export interface IComponentIdentity {
 	/** Static id from the app registry (archComponents/… in cuid.ts). */
@@ -45,176 +72,500 @@ export interface IComponentIdentity {
 	meta?: Record<string, unknown> | null;
 }
 
-export abstract class AuthoringNode {
-	abstract readonly kind: NodeKind;
+// ──────────────────────────────────────────────────────────────────
+// AuthoringNode — marker base for everything that can appear as a child
+// (Component, FieldNode, Renderer). Seeding is embedded in the node
+// constructors — see Component/FieldNode.
+// ──────────────────────────────────────────────────────────────────
 
-	/** Static element id (arch_component_elements.id) — required on every child. */
-	elementId?: number;
-	displayOrder?: number;
-	/** Legacy edge-level grid placement (css-grid slots). Backing field for `.grid()`. */
-	gridData?: IElementGrid;
-	paramBindings?: Record<string, IElementParamBinding>;
-	overrides?: Record<string, unknown>;
-
-	/** Pins the edge row id. */
-	id(elementId: number): this {
-		this.elementId = elementId;
-		return this;
-	}
-
-	/** Explicit edge displayOrder (defaults to the slot index). */
-	order(n: number): this {
-		this.displayOrder = n;
-		return this;
-	}
-
-	/** Grid placement for css-grid slots (legacy — layout nodes replace this). */
-	grid(g: IElementGrid): this {
-		this.gridData = g;
-		return this;
-	}
-
-	/** Resolve the child's contract inputs from context. */
-	bind(b: Record<string, IElementParamBinding>): this {
-		this.paramBindings = { ...this.paramBindings, ...b };
-		return this;
-	}
-
-	/** Element-level overrides merged into the edge row. */
-	override(o: Record<string, unknown>): this {
-		this.overrides = { ...this.overrides, ...o };
-		return this;
-	}
-}
+export abstract class AuthoringNode {}
 
 // ──────────────────────────────────────────────────────────────────
-// Component — a blueprint instance with typed config + slot children
+// Component — a blueprint instance with typed config + children
 // ──────────────────────────────────────────────────────────────────
 
 export abstract class Component<
 	TCfg extends IComponentIdentity = IComponentIdentity,
 > extends AuthoringNode {
-	readonly kind = "component" as const;
-
-	/** Blueprint registry key — bound to an app blueprint id by the kit. */
+	/** Blueprint registry key — bound to an app blueprint id. */
 	static readonly blueprintKey: string;
-
-	/** Blueprint id — stamped by the kit binding at construction. */
-	blueprintId!: number;
+	/** Slot filled by the children array. */
+	static readonly defaultSlot: string = "content";
+	/** Config keys that hold child nodes: config key → slot name. */
+	static readonly nodeSlots: Record<string, string> = {};
 
 	readonly config: TCfg;
-	readonly children: SlotChildren;
+	readonly children: AuthoringChild[];
+	/** Blueprint id — resolved from the app registry at construction. */
+	readonly blueprintId: number;
 
-	constructor(config: TCfg, children: SlotChildren = {}) {
+	constructor(config: TCfg, children?: Children) {
 		super();
 		this.config = config;
-		this.children = children;
+		this.children = normalizeChildren(children);
+		this.blueprintId = getBlueprintId(
+			(this.constructor as typeof Component).blueprintKey,
+		);
+		// ── Seed on construction: register this row + edges to children
+		// into the active SeedContext (the current seed file). When no
+		// context is active (e.g. a shared instance constructed in an
+		// imported module), the row is ensured by whichever parent
+		// references it — `emitEdge` re-adds child rows idempotently.
+		const ctx = SeedContext.current;
+		if (ctx) {
+			ctx.addComponent(this.seedRow());
+			for (const [slot, child, index] of this.entries()) {
+				const order = this.effectiveOrder(child, index + 1);
+				this.emitEdge(ctx, slot, child, order);
+			}
+		}
+	}
+
+	get id(): number {
+		return this.config.id;
+	}
+
+	/** (slot, child, index) pairs — default slot first, then node-slot config keys. */
+	*entries(): Generator<[string, AuthoringChild, number]> {
+		const ctor = this.constructor as typeof Component;
+		for (let i = 0; i < this.children.length; i++) {
+			yield [ctor.defaultSlot, this.children[i], i];
+		}
+		for (const [key, slot] of Object.entries(ctor.nodeSlots)) {
+			const nodes = (this.config as unknown as Record<string, unknown>)[key];
+			if (!Array.isArray(nodes)) continue;
+			for (let i = 0; i < nodes.length; i++) {
+				yield [slot, nodes[i] as AuthoringChild, i];
+			}
+		}
+	}
+
+	private effectiveOrder(
+		nodeOrFallback: AuthoringNode | number,
+		fallback: number,
+	): number {
+		if (typeof nodeOrFallback === "number") return fallback;
+		const order = (nodeOrFallback as { config?: { displayOrder?: number } })
+			.config?.displayOrder;
+		return order ?? fallback;
+	}
+
+	/**
+	 * The arch_components row — computed from config + blueprint id.
+	 * displayOrder starts at the 0 sentinel: the parent pins it to the
+	 * slot position when the edge is emitted; roots are finalized to 1
+	 * in `SeedContext.collect()`. Explicit config.displayOrder wins.
+	 */
+	private seedRow() {
+		const identity = this.config;
+		return {
+			id: identity.id,
+			blueprintId: this.blueprintId,
+			name: identity.name ?? String(identity.id),
+			displayName: identity.displayName ?? "",
+			description: identity.description ?? null,
+			icon: identity.icon ?? null,
+			category: identity.category ?? "system",
+			config: this.strippedConfig(),
+			pathPattern: identity.pathPattern ?? null,
+			visibleToPermissions: identity.visibleToPermissions ?? null,
+			overridesComponentId: null,
+			displayOrder: identity.displayOrder ?? 0,
+			tenantId: null,
+			isActive: true,
+			isSystem: true,
+			meta: identity.meta ?? null,
+		};
+	}
+
+	/** Config minus identity keys and node-typed slot keys (not JSON). */
+	private strippedConfig(): Record<string, unknown> {
+		const ctor = this.constructor as typeof Component;
+		const nodeKeys = new Set(Object.keys(ctor.nodeSlots));
+		const out: Record<string, unknown> = {};
+		for (const [key, value] of Object.entries(this.config as unknown as Record<string, unknown>)) {
+			if (IDENTITY_KEYS.has(key) || nodeKeys.has(key)) continue;
+			out[key] = value;
+		}
+		return out;
+	}
+
+	private emitEdge(
+		ctx: SeedContext,
+		slot: string,
+		child: AuthoringChild,
+		displayOrder: number,
+	): void {
+		const base = {
+			id: ctx.nextElementId(),
+			componentId: this.id,
+			slotName: slot,
+			displayOrder,
+			isActive: true,
+		};
+
+		if (typeof child === "number") {
+			ctx.elements.push({
+				...base,
+				elementType: "component_ref",
+				referencedComponentId: child,
+				paramBindings: {},
+			});
+			return;
+		}
+
+		if (child instanceof Component) {
+			// Ensure the row exists in THIS context (idempotent — also covers
+			// shared instances constructed outside any seed context) and pin
+			// its displayOrder to this slot (first parent wins).
+			ctx.addComponent(child.seedRow());
+			ctx.setDisplayOrder(child.id, displayOrder);
+			ctx.elements.push({
+				...base,
+				elementType: "component_ref",
+				referencedComponentId: child.id,
+				paramBindings: {},
+			});
+			return;
+		}
+
+		if (child instanceof FieldNode) {
+			ctx.addFieldDefinition(child.fieldDefRow());
+			const overrides = child.elementOverrides();
+			const row: (typeof ctx.elements)[number] = {
+				...base,
+				elementType: "field",
+				fieldDefinitionId: child.id,
+				overrides: Object.keys(overrides).length > 0 ? overrides : null,
+			};
+			if (child.config.uiComponentId != null) {
+				row.uiComponentId = child.config.uiComponentId;
+			}
+			ctx.elements.push(row);
+			return;
+		}
+
+		if (child instanceof Renderer) {
+			ctx.elements.push({
+				...base,
+				elementType: "renderer",
+				rendererBlueprintId: child.rendererBlueprintId,
+				rendererConfig: child.rendererConfig,
+			});
+			return;
+		}
+
+		throw new Error(`Authoring: unknown child in slot "${slot}" of component "${this.id}".`);
 	}
 }
+
+/** Config keys that are component identity — lifted into columns, never stored in `config`. */
+const IDENTITY_KEYS = new Set([
+	"id",
+	"name",
+	"displayName",
+	"description",
+	"icon",
+	"category",
+	"pathPattern",
+	"visibleToPermissions",
+	"displayOrder",
+	"meta",
+]);
 
 // ── Concrete blueprint classes ────────────────────────────────────
 
 export class ScreenLayout extends Component<IComponentIdentity> {
 	static readonly blueprintKey = "screenLayoutGeneral";
-	constructor(config: IComponentIdentity, children: SlotChildren = {}) {
-		super(config, children);
-	}
+	static readonly defaultSlot = "body";
 }
 
 export class Page extends Component<IComponentIdentity> {
 	static readonly blueprintKey = "page";
-	constructor(config: IComponentIdentity, children: SlotChildren = {}) {
-		super(config, children);
-	}
+	static readonly defaultSlot = "body";
 }
 
 export class Form extends Component<IFormConfig> {
 	static readonly blueprintKey = "form";
-	constructor(config: IFormConfig, children: SlotChildren = {}) {
-		super(config, children);
-	}
+	static readonly nodeSlots = { actions: "actions" };
 }
 
-export class Section extends Component<ISectionConfig> {
-	static readonly blueprintKey = "section";
-	constructor(config: ISectionConfig, children: SlotChildren = {}) {
-		super(config, children);
-	}
+export class Typography extends Component<ITypographyConfig> {
+	static readonly blueprintKey = "typography";
 }
 
 export class Info extends Component<IInfoConfig> {
 	static readonly blueprintKey = "info";
-	constructor(config: IInfoConfig, children: SlotChildren = {}) {
-		super(config, children);
-	}
 }
 
 export class Tabs extends Component<ITabsConfig> {
 	static readonly blueprintKey = "tabs";
-	constructor(config: ITabsConfig, children: SlotChildren = {}) {
-		super(config, children);
-	}
 }
 
 export class Table extends Component<ITableConfig> {
 	static readonly blueprintKey = "table";
-	constructor(config: ITableConfig, children: SlotChildren = {}) {
-		super(config, children);
-	}
+	static readonly defaultSlot = "columns";
+	static readonly nodeSlots = { toolbar: "toolbar", rowActions: "row-actions" };
 }
 
 /** Explicit layout primitive — `container: true` or an item with `sizes`. */
 export class Grid extends Component<IGridConfig> {
 	static readonly blueprintKey = "grid";
-	constructor(config: IGridConfig, children: SlotChildren = {}) {
-		super(config, children);
-	}
 }
 
 export class Stack extends Component<IStackConfig> {
 	static readonly blueprintKey = "stack";
-	constructor(config: IStackConfig, children: SlotChildren = {}) {
-		super(config, children);
-	}
 }
 
-/** The card wrapper — replaces the renderer's hidden BodyCard. */
+/** MUI Container — a max-width centered wrapper. */
 export class Container extends Component<IContainerConfig> {
 	static readonly blueprintKey = "container";
-	constructor(config: IContainerConfig, children: SlotChildren = {}) {
-		super(config, children);
-	}
+}
+
+/** MUI Paper — the rounded surface (card). */
+export class Paper extends Component<IPaperConfig> {
+	static readonly blueprintKey = "paper";
+}
+
+/** MUI Box — the generic wrapper. */
+export class Box extends Component<IBoxConfig> {
+	static readonly blueprintKey = "box";
+}
+
+/** Default layout — a titled Paper card with an optional actions row. */
+export class Layout extends Component<ILayoutConfig> {
+	static readonly blueprintKey = "layout";
+	static readonly nodeSlots = { actions: "actions" };
+}
+
+export class Button extends Component<IButtonConfig> {
+	static readonly blueprintKey = "button";
+}
+
+export class Link extends Component<ILinkConfig> {
+	static readonly blueprintKey = "link";
+}
+
+// ── Charts & metrics ──────────────────────────────────────────────
+
+export class BarChart extends Component<IChartConfig> {
+	static readonly blueprintKey = "barChart";
+}
+
+export class PieChart extends Component<IChartConfig> {
+	static readonly blueprintKey = "pieChart";
+}
+
+export class LineChart extends Component<IChartConfig> {
+	static readonly blueprintKey = "lineChart";
+}
+
+export class Metric extends Component<IChartConfig> {
+	static readonly blueprintKey = "metric";
+}
+
+export class SpeedGauge extends Component<IChartConfig> {
+	static readonly blueprintKey = "speedGauge";
+}
+
+export class DateRangePicker extends Component<IDateRangePickerConfig> {
+	static readonly blueprintKey = "dateRangePicker";
+}
+
+// ── Uploads / assets ──────────────────────────────────────────────
+
+export class Avatar extends Component<IAvatarConfig> {
+	static readonly blueprintKey = "avatar";
+}
+
+export class LogoUploader extends Component<ILogoUploaderConfig> {
+	static readonly blueprintKey = "logoUploader";
+}
+
+// ── Data viewers ──────────────────────────────────────────────────
+
+export class RawJson extends Component<IRawJsonConfig> {
+	static readonly blueprintKey = "rawJson";
+}
+
+export class AuditHistory extends Component<IAuditHistoryConfig> {
+	static readonly blueprintKey = "auditHistory";
+}
+
+export class List extends Component<IListConfig> {
+	static readonly blueprintKey = "list";
+}
+
+export class ScreenTree extends Component<IScreenTreeConfig> {
+	static readonly blueprintKey = "screenTree";
+}
+
+// ── State / actions ───────────────────────────────────────────────
+
+export class StateContext extends Component<IStateContextConfig> {
+	static readonly blueprintKey = "stateContext";
+}
+
+export class StageActions extends Component<IStageActionsConfig> {
+	static readonly blueprintKey = "stageActions";
+}
+
+// ── App-specific (the host registers their renderers) ─────────────
+
+export class SwaggerEditor extends Component<ISwaggerEditorConfig> {
+	static readonly blueprintKey = "swaggerEditor";
+}
+
+export class TestTab extends Component<ITestTabConfig> {
+	static readonly blueprintKey = "testTab";
+}
+
+export class PerMethodPricing extends Component<IPerMethodPricingConfig> {
+	static readonly blueprintKey = "perMethodPricing";
 }
 
 // ──────────────────────────────────────────────────────────────────
-// Leaf nodes
+// FieldNode — a leaf field that self-provisions its field definition
 // ──────────────────────────────────────────────────────────────────
 
-export class Field extends AuthoringNode {
-	readonly kind = "field" as const;
+export abstract class FieldNode extends AuthoringNode {
+	/** field_definitions.type */
+	static readonly fieldType: FieldType;
 
-	constructor(
-		readonly fieldDefinitionId: number,
-		overrides: IFieldOverride = {},
-	) {
+	readonly config: IFieldConfig;
+
+	constructor(config: IFieldConfig) {
 		super();
-		this.overrides = { ...(overrides as Record<string, unknown>) };
+		this.config = config;
+		// Seed on construction: register the field definition row. When no
+		// context is active, parents re-ensure it at edge time.
+		SeedContext.current?.addFieldDefinition(this.fieldDefRow());
+	}
+
+	get id(): number {
+		return this.config.id;
+	}
+
+	/** Instance-specific element overrides (renderer-facing). */
+	elementOverrides(): Record<string, unknown> {
+		const out: Record<string, unknown> = {};
+		const cfg = this.config;
+		if (cfg.label != null || cfg.displayName != null) {
+			out.displayName = cfg.displayName ?? cfg.label;
+		}
+		if (cfg.description != null) out.description = cfg.description;
+		if (cfg.isRequired != null) out.isRequired = cfg.isRequired;
+		if (cfg.isReadOnly != null) out.isReadOnly = cfg.isReadOnly;
+		if (cfg.isHidden != null) out.hidden = cfg.isHidden;
+		if (cfg.placeholder != null) out.placeholder = cfg.placeholder;
+		if (cfg.validations != null) out.validations = cfg.validations;
+		if (cfg.datasource != null) out.datasource = cfg.datasource;
+		if (cfg.colSpan != null) out.colSpan = cfg.colSpan;
+		if (cfg.columnConfig != null) out.columnConfig = cfg.columnConfig;
+		if (cfg.visibleToPermissions != null) {
+			out.visibleToPermissions = cfg.visibleToPermissions;
+		}
+		return out;
+	}
+
+	/** The field_definitions row — deduped by id in the seed context. */
+	fieldDefRow() {
+		return {
+			id: this.config.id,
+			name: this.config.name ?? String(this.config.id),
+			displayName: this.config.displayName ?? this.config.label ?? "",
+			type: (this.constructor as typeof FieldNode).fieldType,
+			isSystem: true,
+			isActive: true,
+		};
 	}
 }
+
+export class TextField extends FieldNode {
+	static readonly fieldType = "text";
+}
+
+export class AutocompleteField extends FieldNode {
+	static readonly fieldType = "autocomplete";
+}
+
+export class PasswordField extends FieldNode {
+	static readonly fieldType = "password";
+}
+
+export class NumberField extends FieldNode {
+	static readonly fieldType = "number";
+}
+
+export class EmailField extends FieldNode {
+	static readonly fieldType = "email";
+}
+
+export class TextareaField extends FieldNode {
+	static readonly fieldType = "textarea";
+}
+
+export class SelectField extends FieldNode {
+	static readonly fieldType = "select";
+}
+
+export class MultiselectField extends FieldNode {
+	static readonly fieldType = "multiselect";
+}
+
+export class RadioField extends FieldNode {
+	static readonly fieldType = "radio";
+}
+
+export class CheckboxField extends FieldNode {
+	static readonly fieldType = "checkbox";
+}
+
+export class SwitchField extends FieldNode {
+	static readonly fieldType = "switch";
+}
+
+export class DateField extends FieldNode {
+	static readonly fieldType = "date";
+}
+
+export class DateTimeField extends FieldNode {
+	static readonly fieldType = "datetime";
+}
+
+export class TimeField extends FieldNode {
+	static readonly fieldType = "time";
+}
+
+export class BooleanField extends FieldNode {
+	static readonly fieldType = "boolean";
+}
+
+export class ColorField extends FieldNode {
+	static readonly fieldType = "color";
+}
+
+export class JsonField extends FieldNode {
+	static readonly fieldType = "json";
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Renderer — a leaf renderer element (no own rows; the parent emits
+// the edge referencing the renderer blueprint)
+// ──────────────────────────────────────────────────────────────────
 
 export abstract class Renderer extends AuthoringNode {
-	readonly kind = "renderer" as const;
-
 	static readonly blueprintKey: string;
 
-	/** Renderer blueprint id — stamped by the kit binding. */
-	rendererBlueprintId!: number;
-
+	readonly rendererBlueprintId: number;
 	readonly rendererConfig: Record<string, unknown>;
 
 	constructor(config: Record<string, unknown> = {}) {
 		super();
 		this.rendererConfig = config;
+		this.rendererBlueprintId = getBlueprintId(
+			(this.constructor as typeof Renderer).blueprintKey,
+		);
 	}
 }
 
@@ -232,17 +583,4 @@ export class ChartCell extends Renderer {
 
 export class FieldRenderer extends Renderer {
 	static readonly blueprintKey = "fieldRenderer";
-}
-
-export class Ref extends AuthoringNode {
-	readonly kind = "ref" as const;
-
-	constructor(readonly componentId: number) {
-		super();
-	}
-}
-
-/** Embed an existing component (defined in another file) by id. */
-export function ref(componentId: number): Ref {
-	return new Ref(componentId);
 }

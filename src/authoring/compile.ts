@@ -6,13 +6,24 @@ import type {
 	screens as scSchema,
 	screenWidgets as swSchema,
 } from "../schemas";
-import type { AuthoringNode, IComponentIdentity } from "./nodes";
-import { Component, Field, Ref, Renderer } from "./nodes";
 import type { FieldDefRow } from "./config-types";
 
 // ──────────────────────────────────────────────────────────────────
-// defineSeed — walks the authored tree and emits the exact insert
-// arrays seed.ts already consumes. No seed.ts change required.
+// SeedContext — the per-file seed accumulator.
+//
+// Seeding is embedded in the node classes: constructing a node
+// registers its rows into the ACTIVE context (see SeedContext.current).
+// A seed file therefore needs no defineSeed ceremony:
+//
+//   const seed = new SeedContext();          // becomes active
+//   const form = new Form({ id: 1 }, [...]); // registers rows + edges
+//   seed.module = { ... }; seed.screens = [...]; seed.widgets = [...];
+//   export const { COMPONENTS, ELEMENTS, ... } = seed.collect();
+//
+// Rows are deduped by id — the same instance reused in multiple parents
+// emits its own rows once, with one edge per parent. Element edge ids
+// are minted from a process-global counter so aggregated bundles
+// (login + register + …) never mint colliding ids.
 // ──────────────────────────────────────────────────────────────────
 
 type CompRow = typeof compSchema.$inferInsert;
@@ -21,183 +32,110 @@ type ModuleRow = typeof mSchema.$inferInsert;
 type ScreenRow = typeof scSchema.$inferInsert;
 type WidgetRow = typeof swSchema.$inferInsert;
 
-/** Config keys that are component identity — lifted into columns, never stored in `config`. */
-const IDENTITY_KEYS = new Set([
-	"id",
-	"name",
-	"displayName",
-	"description",
-	"icon",
-	"category",
-	"pathPattern",
-	"visibleToPermissions",
-	"displayOrder",
-	"meta",
-]);
-
-export interface DefineSeedInput {
-	fields?: FieldDefRow[];
-	module?: ModuleRow;
-	screens?: ScreenRow[];
-	/** Main component tree roots. */
-	components?: Component[];
-	/** Dialog-mounted form roots (arch_components rows, seeded as FORM_COMPONENTS). */
-	formComponents?: Component[];
-	widgets?: WidgetRow[];
-}
-
 export interface SeedBundle {
 	FIELD_DEFINITIONS: FieldDefRow[];
 	COMPONENTS: CompRow[];
-	FORM_COMPONENTS: CompRow[];
 	ELEMENTS: ElRow[];
-	MODULE: ModuleRow;
+	MODULE?: ModuleRow;
 	SCREENS: ScreenRow[];
 	SCREEN_WIDGETS: WidgetRow[];
 }
 
-interface EmitState {
-	components: CompRow[];
-	formComponents: CompRow[];
-	elements: ElRow[];
+// Global element-id sequence — shared by every SeedContext in the process
+// so aggregated bundles never mint colliding ids. No row references an
+// element id, so shifts across seed edits are safe.
+let elementSeq = 0;
+
+/** Reset the element-id sequence (tests only). */
+export function resetElementIdSequence(): void {
+	elementSeq = 0;
 }
 
-function stripIdentity(config: Record<string, unknown>): Record<string, unknown> {
-	const out: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(config)) {
-		if (!IDENTITY_KEYS.has(key)) out[key] = value;
+let activeContext: SeedContext | null = null;
+
+export class SeedContext {
+	readonly fieldDefinitions: FieldDefRow[] = [];
+	readonly components: CompRow[] = [];
+	readonly elements: ElRow[] = [];
+
+	/** Module row (optional — upserted by id). */
+	module?: ModuleRow;
+	/** Screen rows. */
+	screens: ScreenRow[] = [];
+	/** Widget rows. */
+	widgets: WidgetRow[] = [];
+
+	private readonly seenFields = new Set<number>();
+	private readonly seenComponents = new Set<number>();
+
+	constructor() {
+		// Last-created context wins — seed files construct synchronously at
+		// module top-level, one file at a time, so nodes always register
+		// into the current file's context.
+		activeContext = this;
 	}
-	return out;
-}
 
-function effectiveDisplayOrder(node: AuthoringNode, fallback: number): number {
-	const configOrder = (
-		node as { config?: { displayOrder?: number } }
-	).config?.displayOrder;
-	return node.displayOrder ?? configOrder ?? fallback;
-}
-
-function emitElement(
-	state: EmitState,
-	child: AuthoringNode,
-	componentId: number,
-	slotName: string,
-	displayOrder: number,
-): void {
-	if (!child.elementId) {
-		throw new Error(
-			`Authoring: child in slot "${slotName}" of component "${componentId}" is missing .id(...) — every edge needs a static element id.`,
-		);
+	/** The context newly-constructed nodes register into. */
+	static get current(): SeedContext | null {
+		return activeContext;
 	}
 
-	const base = {
-		id: child.elementId,
-		componentId,
-		slotName,
-		displayOrder,
-		isActive: true,
-	};
-	// Grid placement lives on the edge for every element type (css-grid slots).
-	const edgeGrid = child.gridData ? { grid: child.gridData } : {};
+	/** Register a field definition row — idempotent by id. */
+	addFieldDefinition(row: FieldDefRow): void {
+		if (row.id == null || this.seenFields.has(row.id)) return;
+		this.seenFields.add(row.id);
+		this.fieldDefinitions.push(row);
+	}
 
-	if (child instanceof Field) {
-		const raw = child.overrides ?? {};
-		const { uiComponentId } = raw as { uiComponentId?: number };
-		const overrides: Record<string, unknown> = { ...raw };
-		delete overrides.uiComponentId;
+	/** Register a component row — idempotent by id (first registration wins). */
+	addComponent(row: CompRow): void {
+		if (row.id == null || this.seenComponents.has(row.id)) return;
+		this.seenComponents.add(row.id);
+		this.components.push(row);
+	}
 
-		const row: ElRow = {
-			...base,
-			...edgeGrid,
-			elementType: "field",
-			fieldDefinitionId: child.fieldDefinitionId,
-			overrides: Object.keys(overrides).length > 0 ? overrides : null,
+	/**
+	 * Pin a registered row's displayOrder to its slot position. The first
+	 * parent wins; explicit `config.displayOrder` is never overwritten
+	 * (rows carrying it register with that value, not the 0 sentinel).
+	 */
+	setDisplayOrder(id: number, order: number): void {
+		const row = this.components.find((r) => r.id === id);
+		if (row && row.displayOrder === 0) row.displayOrder = order;
+	}
+
+	addElement(row: ElRow): void {
+		this.elements.push(row);
+	}
+
+	nextElementId(): number {
+		return ++elementSeq;
+	}
+
+	/**
+	 * Finalize the bundle. Roots (rows never parented) get displayOrder 1;
+	 * module/screens/widgets are normalized with the defaults hand-written
+	 * seeds spell out. After collect() the context is detached.
+	 */
+	collect(): SeedBundle {
+		for (const row of this.components) {
+			if (row.displayOrder === 0) row.displayOrder = 1;
+		}
+		activeContext = null;
+		return {
+			FIELD_DEFINITIONS: this.fieldDefinitions,
+			COMPONENTS: this.components,
+			ELEMENTS: this.elements,
+			MODULE: this.module ? normalizeModule(this.module) : undefined,
+			SCREENS: this.screens.map(normalizeScreen),
+			SCREEN_WIDGETS: this.widgets.map(normalizeWidget),
 		};
-		if (uiComponentId) row.uiComponentId = uiComponentId;
-		state.elements.push(row);
-		return;
-	}
-
-	if (child instanceof Ref) {
-		state.elements.push({
-			...base,
-			...edgeGrid,
-			elementType: "component_ref",
-			referencedComponentId: child.componentId,
-			paramBindings: child.paramBindings ?? {},
-		});
-		return;
-	}
-
-	if (child instanceof Component) {
-		const row: ElRow = {
-			...base,
-			...edgeGrid,
-			elementType: "component_ref",
-			referencedComponentId: child.config.id,
-			paramBindings: child.paramBindings ?? {},
-		};
-		state.elements.push(row);
-		return;
-	}
-
-	if (child instanceof Renderer) {
-		state.elements.push({
-			...base,
-			...edgeGrid,
-			elementType: "renderer",
-			rendererBlueprintId: child.rendererBlueprintId,
-			rendererConfig: child.rendererConfig,
-		});
-		return;
-	}
-
-	throw new Error(`Authoring: unknown node kind in slot "${slotName}".`);
-}
-
-function emitComponent(
-	state: EmitState,
-	comp: Component,
-	isFormRoot: boolean,
-	slotDisplayOrder?: number,
-): void {
-	const identity = comp.config as IComponentIdentity;
-
-	const row: CompRow = {
-		id: identity.id,
-		blueprintId: comp.blueprintId,
-		name: identity.name ?? String(identity.id),
-		displayName: identity.displayName ?? "",
-		description: identity.description ?? null,
-		icon: identity.icon ?? null,
-		category: identity.category ?? "system",
-		config: stripIdentity(comp.config as unknown as Record<string, unknown>),
-		pathPattern: identity.pathPattern ?? null,
-		visibleToPermissions: identity.visibleToPermissions ?? null,
-		overridesComponentId: null,
-		displayOrder:
-			slotDisplayOrder ?? effectiveDisplayOrder(comp, isFormRoot ? 0 : 1),
-		tenantId: null,
-		isActive: true,
-		isSystem: true,
-		meta: identity.meta ?? null,
-	};
-	(isFormRoot ? state.formComponents : state.components).push(row);
-
-	for (const [slotName, children] of Object.entries(comp.children)) {
-		children.forEach((child, index) => {
-			const displayOrder = effectiveDisplayOrder(child, index + 1);
-			emitElement(state, child, comp.config.id, slotName, displayOrder);
-			if (child instanceof Component) {
-				emitComponent(state, child, isFormRoot, displayOrder);
-			}
-		});
 	}
 }
 
 // ── Thin wrappers — fill the defaults the hand-written seeds spell out ──
 
-function normalizeModule(module?: ModuleRow): ModuleRow {
+function normalizeModule(module: ModuleRow): ModuleRow {
 	return {
 		tenantId: null,
 		overridesModuleId: null,
@@ -227,21 +165,4 @@ function normalizeWidget(widget: WidgetRow): WidgetRow {
 		meta: null,
 		...widget,
 	} as WidgetRow;
-}
-
-export function defineSeed(input: DefineSeedInput): SeedBundle {
-	const state: EmitState = { components: [], formComponents: [], elements: [] };
-
-	for (const root of input.components ?? []) emitComponent(state, root, false);
-	for (const root of input.formComponents ?? []) emitComponent(state, root, true);
-
-	return {
-		FIELD_DEFINITIONS: input.fields ?? [],
-		COMPONENTS: state.components,
-		FORM_COMPONENTS: state.formComponents,
-		ELEMENTS: state.elements,
-		MODULE: normalizeModule(input.module),
-		SCREENS: (input.screens ?? []).map(normalizeScreen),
-		SCREEN_WIDGETS: (input.widgets ?? []).map(normalizeWidget),
-	};
 }
