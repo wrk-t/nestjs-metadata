@@ -9,8 +9,9 @@ import {
 
 export abstract class MetadataBaseService<
   TSchema extends TBasePgTable,
-  TRepo extends BasePostgresRepository<any, TSchema>,
-> extends ScopedBaseService<TSchema, TRepo> {
+  TRepo extends BasePostgresRepository<any, TSchema, TId>,
+  TId = string,
+> extends ScopedBaseService<TSchema, TRepo, TId> {
   abstract logger: Logger;
 
   constructor(
@@ -36,7 +37,7 @@ export abstract class MetadataBaseService<
     return this.resolve(result, locale);
   }
 
-  async selectOneById(id: string): Promise<any> {
+  async selectOneById(id: TId): Promise<any> {
     const result = await super.selectOneById(id);
     const locale = this.requestContext?.getLocale() ?? "en";
     return this.resolve(result, locale);

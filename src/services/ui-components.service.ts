@@ -8,7 +8,8 @@ import { UiComponentsPgRepository } from "../repositories/ui-components.pg.repos
 @Injectable()
 export class UiComponentsService extends MetadataBaseService<
   typeof uiComponents,
-  UiComponentsPgRepository
+  UiComponentsPgRepository,
+  number
 > {
   logger = new Logger(UiComponentsService.name);
 
@@ -24,10 +25,10 @@ export class UiComponentsService extends MetadataBaseService<
 
   protected override guardCreate(_data: any): undefined {}
   protected override guardUpdate(
-    _id: string,
+    _id: number,
     _existing: any,
     _data: any,
   ): undefined {}
-  protected override guardDelete(_id: string, _existing: any): undefined {}
-  protected override guardRecover(_id: string, _existing: any): undefined {}
+  protected override guardDelete(_id: number, _existing: any): undefined {}
+  protected override guardRecover(_id: number, _existing: any): undefined {}
 }

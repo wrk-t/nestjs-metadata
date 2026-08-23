@@ -12,7 +12,8 @@
 	"types": "./dist/index.d.ts",
 	"typesVersions": {
 		"*": {
-			"schemas": ["./dist/schemas/index.d.ts"]
+			"schemas": ["./dist/schemas/index.d.ts"],
+			"authoring": ["./dist/authoring/index.d.ts"]
 		}
 	},
 	"exports": {
@@ -21,20 +22,26 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./schemas": {
-      "import": "./dist/schemas/index.js",
-      "require": "./dist/schemas/index.js",
-      "types": "./dist/schemas/index.d.ts"
-    },
+    		"./schemas": {
+    				"import": "./dist/schemas/index.js",
+    				"require": "./dist/schemas/index.js",
+    				"types": "./dist/schemas/index.d.ts"
+    			},
+    			"./authoring": {
+    				"import": "./dist/authoring/index.js",
+    				"require": "./dist/authoring/index.js",
+    				"types": "./dist/authoring/index.d.ts"
+    			},
     "./*": "./dist/*"
   },
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "clean": "rm -rf dist",
+  	"scripts": {
+    		"build": "tsc",
+    		"dev": "tsc --watch",
+    		"test": "node --test",
+    		"clean": "rm -rf dist",
     "format": "npx @biomejs/biome format --write .",
     "lint": "npx @biomejs/biome lint --write .",
     "check": "npx @biomejs/biome check --write .",

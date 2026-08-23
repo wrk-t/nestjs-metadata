@@ -1,6 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import {
   IsBoolean,
+  IsDate,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -19,7 +21,7 @@ import { entities } from "../../schemas/entities";
 // ── Base types ──────────────────────────────────────────────
 export type SelectModel = InferSelectModel<typeof entities>;
 export type InsertModel = InferInsertModel<typeof entities>;
-export type TPublic = PublicTableDto & SelectModel;
+export type TPublic = Omit<PublicTableDto, "id"> & SelectModel;
 export type TUpdate = Partial<
   Pick<
     InsertModel,
@@ -38,7 +40,27 @@ export const SEARCH_FIELDS = ["name", "displayName", "tableName"];
 export type TSortableItems = (typeof SORT_BY_ITEMS)[number];
 
 // ── Entity DTO ──────────────────────────────────────────────
-export class BaseEntityDto extends PublicTableDto implements TPublic {
+// Numeric metadata ids — cannot extend PublicTableDto (string id).
+export class BaseEntityDto implements TPublic {
+  @ApiProperty({ example: 1, type: Number })
+  readonly id!: number;
+
+  @ApiProperty()
+  @IsDate()
+  @Type(() => Date)
+  readonly createdAt!: Date;
+
+  @ApiProperty({ required: false, nullable: true })
+  @IsDate()
+  @Type(() => Date)
+  @IsOptional()
+  readonly deletedAt: Date | null = null;
+
+  @ApiProperty()
+  @IsDate()
+  @Type(() => Date)
+  readonly updatedAt!: Date;
+
   @IsNotEmpty()
   @IsString()
   @MinLength(2)

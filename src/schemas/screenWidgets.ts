@@ -53,18 +53,18 @@ export const screenWidgets = pgTable("screen_widgets", {
   ...ids,
   ...timestamps,
 
-  // ── Parent ─────────────────────────────────────────────────
-  screenId: varchar("screen_id", { length: 24 })
-    .notNull()
-    .references(() => screens.id, { onDelete: "cascade" }),
+  	// ── Parent ─────────────────────────────────────────────────
+  	screenId: integer("screen_id")
+  		.notNull()
+  		.references(() => screens.id, { onDelete: "cascade" }),
 
-  // ── Type + resource ────────────────────────────────────────
-  widgetType: varchar("widget_type", {
-    length: 50,
-	    enum: ["table", "form", "chart", "info", "tabs", "button", "page"],
-  }).notNull(),
+  	// ── Type + resource ────────────────────────────────────────
+  	widgetType: varchar("widget_type", {
+  		length: 50,
+  		    enum: ["table", "form", "chart", "info", "tabs", "button", "page"],
+  	}).notNull(),
 
-  resourceId: varchar("resource_id", { length: 24 }),
+  	resourceId: integer("resource_id"),
 
   // ── Order ──────────────────────────────────────────────────
   displayOrder: integer("display_order").default(0),
@@ -92,8 +92,8 @@ export const screenWidgets = pgTable("screen_widgets", {
   // ── Tenant isolation ───────────────────────────────────────
   tenantId: varchar("tenant_id", { length: 24 }),
 
-  // ── Override chain ─────────────────────────────────────────
-  overridesWidgetId: varchar("overrides_widget_id", { length: 24 }),
+  	// ── Override chain ─────────────────────────────────────────
+  	overridesWidgetId: integer("overrides_widget_id"),
 
   // ── Status ─────────────────────────────────────────────────
   isActive: boolean("is_active").default(true).notNull(),

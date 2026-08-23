@@ -44,6 +44,18 @@ export const fieldDefinitions = pgTable("field_definitions", {
         dependsOn?: string[];
         transform?: string;
         displayField?: string;
+        /**
+         * Autocomplete metadata — which fields the endpoint exposes as
+         * label/value and which columns to search (e.g. a users picker:
+         * displayField "email", valueField "id", searchFields ["email"]).
+         */
+        entityMeta?: {
+          displayField: string;
+          valueField: string;
+          searchFields: string[];
+          filter?: { field: string; value: unknown };
+          orderBy?: { field: string; direction: "asc" | "desc" };
+        };
       }
     | {
         type: "function";
@@ -85,8 +97,8 @@ export const fieldDefinitions = pgTable("field_definitions", {
       }
   >(),
 
-  // ── Default UI config ──
-  uiComponentId: varchar("ui_component_id", { length: 24 }),
+	// ── Default UI config ──
+	uiComponentId: integer("ui_component_id"),
   configProps: json("config_props")
     .$type<Record<string, unknown>>()
     .default({}),

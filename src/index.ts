@@ -27,6 +27,7 @@ export { ScreenWidgetsService } from "./services/screen-widgets.service";
 export { ScreenContextsService } from "./services/screen-contexts.service";
 export { ModulesService } from "./services/modules.service";
 export { FeaturesService } from "./services/features.service";
+export { SettingsService } from "./services/settings.service";
 export { ComponentsService } from "./services/components.service";
 
 // ── Repositories ───────────────────────────────────────────
@@ -38,6 +39,7 @@ export { ScreenWidgetsPgRepository } from "./repositories/screen-widgets.pg.repo
 export { ScreenContextsPgRepository } from "./repositories/screen-contexts.pg.repository";
 export { ModulesPgRepository } from "./repositories/modules.pg.repository";
 export { FeaturesPgRepository } from "./repositories/features.pg.repository";
+export { SettingsPgRepository } from "./repositories/settings.pg.repository";
 export { ComponentsPgRepository } from "./repositories/components.pg.repository";
 
 // ── Module ────────────────────────────────────────────────

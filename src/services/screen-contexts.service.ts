@@ -13,7 +13,8 @@ import { ScreenContextsPgRepository } from "../repositories/screen-contexts.pg.r
 @Injectable()
 export class ScreenContextsService extends MetadataBaseService<
   typeof screenContexts,
-  ScreenContextsPgRepository
+  ScreenContextsPgRepository,
+  number
 > {
   logger = new Logger(ScreenContextsService.name);
 
@@ -29,14 +30,14 @@ export class ScreenContextsService extends MetadataBaseService<
 
   protected override guardCreate(_data: any): undefined {}
   protected override guardUpdate(
-    _id: string,
+    _id: number,
     _existing: any,
     _data: any,
   ): undefined {}
-  protected override guardDelete(_id: string, _existing: any): undefined {}
-  protected override guardRecover(_id: string, _existing: any): undefined {}
+  protected override guardDelete(_id: number, _existing: any): undefined {}
+  protected override guardRecover(_id: number, _existing: any): undefined {}
 
-  async findByScreenId(screenId: string) {
+  async findByScreenId(screenId: number) {
     const ctx = await this.repo.selectOne(
       eq(screenContexts.screenId, screenId),
     );

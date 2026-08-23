@@ -6,7 +6,7 @@ import { EntitiesService } from "../../services/entities.service";
 
 @ApiTags("Entities")
 @Controller("entities")
-export class EntitiesController extends BaseEntityController<EntitiesService> {
+export class EntitiesController extends BaseEntityController<EntitiesService, number> {
   constructor(svc: EntitiesService) {
     super(svc, SimpleEntityDto, SimplePaginatedDto);
   }

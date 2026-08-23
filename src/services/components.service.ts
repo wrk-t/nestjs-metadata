@@ -31,7 +31,8 @@ import type { IPermissionVisibility } from "../schemas";
 @Injectable()
 export class ComponentsService extends MetadataBaseService<
   typeof archComponents,
-  ComponentsPgRepository
+  ComponentsPgRepository,
+  number
 > {
   logger = new Logger(ComponentsService.name);
 
@@ -76,7 +77,7 @@ export class ComponentsService extends MetadataBaseService<
   }
 
   protected override guardUpdate(
-    _id: string,
+    _id: number,
     existing: typeof archComponents.$inferSelect,
     data: Partial<typeof archComponents.$inferInsert>,
   ): ForbiddenDto | undefined {
@@ -89,14 +90,14 @@ export class ComponentsService extends MetadataBaseService<
   }
 
   protected override guardDelete(
-    _id: string,
+    _id: number,
     _existing: typeof archComponents.$inferSelect,
   ): ForbiddenDto | undefined {
     return this.access?.requireScope("components", "all") as any;
   }
 
   protected override guardRecover(
-    _id: string,
+    _id: number,
     _existing: typeof archComponents.$inferSelect,
   ): ForbiddenDto | undefined {
     return this.access?.requireScope("components", "all") as any;
@@ -115,7 +116,7 @@ export class ComponentsService extends MetadataBaseService<
    * @param depth — internal recursion guard (prevents infinite loops)
    */
   async getRender(
-    componentId: string,
+    componentId: number,
     options?: {
       tenantId?: string | null;
       locale?: string;
@@ -189,7 +190,7 @@ export class ComponentsService extends MetadataBaseService<
     _depth: number,
   ): Promise<void> {
     const MAX_REF_DEPTH = 8;
-    const visited = new Set<string>();
+    const visited = new Set<number>();
 
     // Elements whose component_ref children need resolving at this level.
     // Each iteration replaces this with the elements of the components

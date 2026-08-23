@@ -12,8 +12,8 @@ import { fieldDefinitions } from "../schemas";
 @Injectable()
 export class FieldDefinitionsPgRepository extends Repository<
   any,
-  typeof fieldDefinitions
-> {
+  typeof fieldDefinitions,
+  number> {
   protected override tableName = "fieldDefinitions";
 
   override applyScope(condition: SQL | undefined): SQL | undefined {

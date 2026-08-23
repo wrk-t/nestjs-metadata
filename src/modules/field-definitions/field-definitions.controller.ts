@@ -6,7 +6,7 @@ import { FieldDefinitionsService } from "../../services/field-definitions.servic
 
 @ApiTags("Field Definitions")
 @Controller("field-definitions")
-export class FieldDefinitionsController extends BaseEntityController<FieldDefinitionsService> {
+export class FieldDefinitionsController extends BaseEntityController<FieldDefinitionsService, number> {
   constructor(svc: FieldDefinitionsService) {
     super(svc, SimpleEntityDto, SimplePaginatedDto);
   }

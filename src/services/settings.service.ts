@@ -2,19 +2,19 @@ import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { RequestContext, ITranslationService } from "@wrk-t/nestjs-core";
 import { MetadataBaseService } from "../common/metadata-base-service";
 import { TRANSLATION_SERVICE } from "../metadata.types";
-import { features } from "../schemas";
-import { FeaturesPgRepository } from "../repositories/features.pg.repository";
+import { settings } from "../schemas";
+import { SettingsPgRepository } from "../repositories/settings.pg.repository";
 
 @Injectable()
-export class FeaturesService extends MetadataBaseService<
-  typeof features,
-  FeaturesPgRepository,
+export class SettingsService extends MetadataBaseService<
+  typeof settings,
+  SettingsPgRepository,
   number
 > {
-  logger = new Logger(FeaturesService.name);
+  logger = new Logger(SettingsService.name);
 
   constructor(
-    repo: FeaturesPgRepository,
+    repo: SettingsPgRepository,
     @Optional()
     @Inject(TRANSLATION_SERVICE)
     readonly translationService?: ITranslationService,

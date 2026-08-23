@@ -6,7 +6,7 @@ import { ModulesService } from "../../services/modules.service";
 
 @ApiTags("Modules")
 @Controller("modules")
-export class ModulesController extends BaseEntityController<ModulesService> {
+export class ModulesController extends BaseEntityController<ModulesService, number> {
   constructor(svc: ModulesService) {
     super(svc, SimpleEntityDto, SimplePaginatedDto);
   }

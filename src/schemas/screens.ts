@@ -32,12 +32,12 @@ export const screens = pgTable("screens", {
   ...ids,
   ...timestamps,
 
-  // ── Parent ─────────────────────────────────────────────────
-  moduleId: varchar("module_id", { length: 24 })
-    .notNull()
-    .references(() => modules.id, { onDelete: "cascade" }),
+  	// ── Parent ─────────────────────────────────────────────────
+  	moduleId: integer("module_id")
+  		.notNull()
+  		.references(() => modules.id, { onDelete: "cascade" }),
 
-  parentScreenId: varchar("parent_screen_id", { length: 24 }),
+  	parentScreenId: integer("parent_screen_id"),
 
   // ── Identity ───────────────────────────────────────────────
   name: varchar("name", { length: 100 }).notNull(),
@@ -47,8 +47,8 @@ export const screens = pgTable("screens", {
   // ── Tenant isolation ───────────────────────────────────────
   tenantId: varchar("tenant_id", { length: 24 }),
 
-  // ── Override chain ─────────────────────────────────────────
-  overridesScreenId: varchar("overrides_screen_id", { length: 24 }),
+  	// ── Override chain ─────────────────────────────────────────
+  	overridesScreenId: integer("overrides_screen_id"),
 
   // ── Order ──────────────────────────────────────────────────
   displayOrder: integer("display_order").default(0).notNull(),

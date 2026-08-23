@@ -12,7 +12,8 @@ import { screenWidgets } from "../schemas";
 @Injectable()
 export class ScreenWidgetsPgRepository extends Repository<
   any,
-  typeof screenWidgets
+  typeof screenWidgets,
+  number
 > {
   protected override tableName = "screenWidgets";
 
@@ -21,7 +22,7 @@ export class ScreenWidgetsPgRepository extends Repository<
   }
 
   protected override filterableFields: Record<string, (value: any) => SQL> = {
-    screenId: (value: string) => eq(screenWidgets.screenId, value),
+    screenId: (value: string) => eq(screenWidgets.screenId, Number(value)),
     isActive: (value: boolean) => eq(screenWidgets.isActive, value),
     tenantId: (value: string) => eq(screenWidgets.tenantId, value),
   };

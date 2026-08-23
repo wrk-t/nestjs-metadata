@@ -1,10 +1,8 @@
-import { createId } from "@paralleldrive/cuid2";
-import { varchar } from "drizzle-orm/pg-core";
+import { integer } from "drizzle-orm/pg-core";
 
 export const ids = {
-	// id: serial("id").primaryKey().notNull(),
-	id: varchar("id", { length: 24 })
-		.$defaultFn(() => createId())
-		.primaryKey()
-		.notNull(),
+	// Metadata ids are static integers for seeds (registry in cuid.ts),
+	// auto-incremented by the database for runtime-created rows.
+	// `generatedByDefaultAsIdentity` allows explicit values in seeds.
+	id: integer("id").generatedByDefaultAsIdentity().primaryKey().notNull(),
 };

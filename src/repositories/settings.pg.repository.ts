@@ -7,19 +7,19 @@ import {
 import { SQL } from "drizzle-orm";
 import { ClsService } from "nestjs-cls";
 import { Repository, ILogService } from "@wrk-t/nestjs-core";
-import { entities } from "../schemas";
+import { settings } from "../schemas";
 
 @Injectable()
-export class EntitiesPgRepository extends Repository<any, typeof entities, number> {
-  protected override tableName = "entities";
+export class SettingsPgRepository extends Repository<any, typeof settings, number> {
+  protected override tableName = "settings";
 
   override applyScope(condition: SQL | undefined): SQL | undefined {
     return condition;
   }
 
   protected override filterableFields: Record<string, (value: any) => SQL> = {};
-  protected override searchableColumns: any = [];
-  protected override defaultSortColumn: any = "createdAt";
+  protected override searchableColumns: any = ["name", "displayName"];
+  protected override defaultSortColumn: any = "name";
   protected override includeMap = {};
 
   constructor(
@@ -28,6 +28,6 @@ export class EntitiesPgRepository extends Repository<any, typeof entities, numbe
     @Optional() protected readonly logService?: ILogService,
     @Optional() protected readonly cls?: ClsService,
   ) {
-    super(entities, txHost, eventEmitter, logService, cls);
+    super(settings, txHost, eventEmitter, logService, cls);
   }
 }

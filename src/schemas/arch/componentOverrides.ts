@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { json, pgTable, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { integer, json, pgTable, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 import { ids } from "../../helpers/ids";
 import { timestamps } from "../../helpers/timestamps";
 import { archComponents } from "./components";
@@ -28,24 +28,24 @@ export const archComponentOverrides = pgTable(
     ...ids,
     ...timestamps,
 
-    // ── Target ────────────────────────────────────────────────
-    componentId: varchar("component_id", { length: 24 })
-      .notNull()
-      .references(() => archComponents.id, { onDelete: "cascade" }),
+    	// ── Target ────────────────────────────────────────────────
+    	componentId: integer("component_id")
+    		.notNull()
+    		.references(() => archComponents.id, { onDelete: "cascade" }),
 
-    // Null → component-level. Set → element-level.
-    elementId: varchar("element_id", { length: 24 }).references(
-      () => archComponentElements.id,
-      { onDelete: "cascade" },
-    ),
+    	// Null → component-level. Set → element-level.
+    	elementId: integer("element_id").references(
+    		() => archComponentElements.id,
+    		{ onDelete: "cascade" },
+    	),
 
     // ── Tenant ─────────────────────────────────────────────────
     tenantId: varchar("tenant_id", { length: 24 }).notNull(),
 
-    // ── Override values ────────────────────────────────────────
-    // Dot-notation path → value. Only declared paths are valid.
-    // Example: { "displayName": "ACME Customers", "config.settings.density": "compact" }
-    overrides: json("overrides").$type<Record<string, unknown>>().notNull(),
+    	// ── Override values ────────────────────────────────────────
+    	// Dot-notation path → value. Only declared paths are valid.
+    	// Example: { "displayName": "ACME Customers", "config.settings.density": "compact" }
+    	overrides: json("overrides").$type<Record<string, unknown>>().notNull(),
 
     // ── Metadata ───────────────────────────────────────────────
     meta: json("meta").$type<Record<string, unknown> | null>(),

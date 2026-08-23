@@ -14,7 +14,8 @@ import { ModulesPgRepository } from "../repositories/modules.pg.repository";
 @Injectable()
 export class ModulesService extends MetadataBaseService<
   typeof modules,
-  ModulesPgRepository
+  ModulesPgRepository,
+  number
 > {
   logger = new Logger(ModulesService.name);
 
@@ -57,7 +58,7 @@ export class ModulesService extends MetadataBaseService<
   }
 
   protected override guardUpdate(
-    _id: string,
+    _id: number,
     existing: typeof modules.$inferSelect,
     data: Partial<typeof modules.$inferInsert>,
   ): ForbiddenDto | undefined {
@@ -70,14 +71,14 @@ export class ModulesService extends MetadataBaseService<
   }
 
   protected override guardDelete(
-    _id: string,
+    _id: number,
     _existing: typeof modules.$inferSelect,
   ): ForbiddenDto | undefined {
     return this.access?.requireScope("modules", "all") as any;
   }
 
   protected override guardRecover(
-    _id: string,
+    _id: number,
     _existing: typeof modules.$inferSelect,
   ): any {
     return this.access?.requireScope("modules", "all") as any;
