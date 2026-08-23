@@ -21,6 +21,7 @@ import { ComponentsPgRepository } from "./repositories/components.pg.repository"
 // ── Repositories ──
 import { EntitiesPgRepository } from "./repositories/entities.pg.repository";
 import { FeaturesPgRepository } from "./repositories/features.pg.repository";
+import { SettingsPgRepository } from "./repositories/settings.pg.repository";
 import { FieldDefinitionsPgRepository } from "./repositories/field-definitions.pg.repository";
 import { ModulesPgRepository } from "./repositories/modules.pg.repository";
 import { ScreenContextsPgRepository } from "./repositories/screen-contexts.pg.repository";
@@ -31,6 +32,7 @@ import { ComponentsService } from "./services/components.service";
 // ── Services ──
 import { EntitiesService } from "./services/entities.service";
 import { FeaturesService } from "./services/features.service";
+import { SettingsService } from "./services/settings.service";
 import { FieldDefinitionsService } from "./services/field-definitions.service";
 import { ModulesService } from "./services/modules.service";
 import { ScreenContextsService } from "./services/screen-contexts.service";
@@ -76,20 +78,22 @@ export class MetadataModule {
       ScreensService,
       ScreenWidgetsService,
       ScreenContextsService,
-      ModulesService,
-      FeaturesService,
-      ComponentsService,
-      // ── Repositories ──
-      EntitiesPgRepository,
-      FieldDefinitionsPgRepository,
-      UiComponentsPgRepository,
-      ScreensPgRepository,
-      ScreenWidgetsPgRepository,
-      ScreenContextsPgRepository,
-      ModulesPgRepository,
-      FeaturesPgRepository,
-      ComponentsPgRepository,
-    ];
+	      ModulesService,
+	      FeaturesService,
+	      SettingsService,
+	      ComponentsService,
+	      // ── Repositories ──
+	      EntitiesPgRepository,
+	      FieldDefinitionsPgRepository,
+	      UiComponentsPgRepository,
+	      ScreensPgRepository,
+	      ScreenWidgetsPgRepository,
+	      ScreenContextsPgRepository,
+	      ModulesPgRepository,
+	      FeaturesPgRepository,
+	      SettingsPgRepository,
+	      ComponentsPgRepository,
+	    ];
 
     if (features.accessControl) {
       providers.push(AccessControlService);
@@ -126,10 +130,11 @@ export class MetadataModule {
         ScreensService,
         ScreenWidgetsService,
         ScreenContextsService,
-        ModulesService,
-        FeaturesService,
-        ComponentsService,
-        ...(features.accessControl ? [AccessControlService] : []),
+	        ModulesService,
+	        FeaturesService,
+	        SettingsService,
+	        ComponentsService,
+	        ...(features.accessControl ? [AccessControlService] : []),
       ],
     };
   }

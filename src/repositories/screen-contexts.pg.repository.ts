@@ -12,8 +12,8 @@ import { screenContexts } from "../schemas";
 @Injectable()
 export class ScreenContextsPgRepository extends Repository<
   any,
-  typeof screenContexts
-> {
+  typeof screenContexts,
+  number> {
   protected override tableName = "screenContexts";
 
   override applyScope(condition: SQL | undefined): SQL | undefined {

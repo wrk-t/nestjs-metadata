@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   Query,
   Headers,
   Req,
@@ -30,7 +31,7 @@ export class ComponentsController {
     operationId: "get_component_render_v1",
   })
   async findById(
-    @Param("id") id: string,
+    @Param("id", ParseIntPipe) id: number,
     @Query("include") include?: string,
     @Query("context") context?: string,
     @Headers("accept-language") headerLang?: string,

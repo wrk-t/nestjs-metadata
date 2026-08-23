@@ -8,7 +8,8 @@ import { FieldDefinitionsPgRepository } from "../repositories/field-definitions.
 @Injectable()
 export class FieldDefinitionsService extends MetadataBaseService<
   typeof fieldDefinitions,
-  FieldDefinitionsPgRepository
+  FieldDefinitionsPgRepository,
+  number
 > {
   logger = new Logger(FieldDefinitionsService.name);
 
@@ -24,10 +25,10 @@ export class FieldDefinitionsService extends MetadataBaseService<
 
   protected override guardCreate(_data: any): undefined {}
   protected override guardUpdate(
-    _id: string,
+    _id: number,
     _existing: any,
     _data: any,
   ): undefined {}
-  protected override guardDelete(_id: string, _existing: any): undefined {}
-  protected override guardRecover(_id: string, _existing: any): undefined {}
+  protected override guardDelete(_id: number, _existing: any): undefined {}
+  protected override guardRecover(_id: number, _existing: any): undefined {}
 }

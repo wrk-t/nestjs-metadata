@@ -10,7 +10,7 @@ import { Repository, ILogService } from "@wrk-t/nestjs-core";
 import { modules } from "../schemas";
 
 @Injectable()
-export class ModulesPgRepository extends Repository<any, typeof modules> {
+export class ModulesPgRepository extends Repository<any, typeof modules, number> {
   protected override tableName = "modules";
 
   override applyScope(condition: SQL | undefined): SQL | undefined {

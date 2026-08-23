@@ -85,8 +85,8 @@ export const fieldDefinitions = pgTable("field_definitions", {
       }
   >(),
 
-  // ── Default UI config ──
-  uiComponentId: varchar("ui_component_id", { length: 24 }),
+	// ── Default UI config ──
+	uiComponentId: integer("ui_component_id"),
   configProps: json("config_props")
     .$type<Record<string, unknown>>()
     .default({}),

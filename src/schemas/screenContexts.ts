@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { boolean, json, pgTable, varchar } from "drizzle-orm/pg-core";
+import { boolean, integer, json, pgTable, varchar } from "drizzle-orm/pg-core";
 import { ids } from "../helpers/ids";
 import { timestamps } from "../helpers/timestamps";
 import { screens } from "./screens";
@@ -77,10 +77,10 @@ export const screenContexts = pgTable("screen_contexts", {
   ...ids,
   ...timestamps,
 
-  // ── Parent screen ────────────────────────────────────────────
-  screenId: varchar("screen_id", { length: 24 })
-    .notNull()
-    .references(() => screens.id, { onDelete: "cascade" }),
+  	// ── Parent screen ────────────────────────────────────────────
+  	screenId: integer("screen_id")
+  		.notNull()
+  		.references(() => screens.id, { onDelete: "cascade" }),
 
   // ── Parameter exports ────────────────────────────────────────
   params: json("params").$type<IScreenContextParam[]>().notNull(),

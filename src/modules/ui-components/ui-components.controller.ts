@@ -6,7 +6,7 @@ import { UiComponentsService } from "../../services/ui-components.service";
 
 @ApiTags("UI Components")
 @Controller("ui-components")
-export class UiComponentsController extends BaseEntityController<UiComponentsService> {
+export class UiComponentsController extends BaseEntityController<UiComponentsService, number> {
   constructor(svc: UiComponentsService) {
     super(svc, SimpleEntityDto, SimplePaginatedDto);
   }

@@ -8,7 +8,8 @@ import { EntitiesPgRepository } from "../repositories/entities.pg.repository";
 @Injectable()
 export class EntitiesService extends MetadataBaseService<
   typeof entities,
-  EntitiesPgRepository
+  EntitiesPgRepository,
+  number
 > {
   logger = new Logger(EntitiesService.name);
 
@@ -24,10 +25,10 @@ export class EntitiesService extends MetadataBaseService<
 
   protected override guardCreate(_data: any): undefined {}
   protected override guardUpdate(
-    _id: string,
+    _id: number,
     _existing: any,
     _data: any,
   ): undefined {}
-  protected override guardDelete(_id: string, _existing: any): undefined {}
-  protected override guardRecover(_id: string, _existing: any): undefined {}
+  protected override guardDelete(_id: number, _existing: any): undefined {}
+  protected override guardRecover(_id: number, _existing: any): undefined {}
 }

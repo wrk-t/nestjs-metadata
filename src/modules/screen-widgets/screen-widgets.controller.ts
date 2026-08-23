@@ -6,7 +6,7 @@ import { ScreenWidgetsService } from "../../services/screen-widgets.service";
 
 @ApiTags("Screen Widgets")
 @Controller("screen-widgets")
-export class ScreenWidgetsController extends BaseEntityController<ScreenWidgetsService> {
+export class ScreenWidgetsController extends BaseEntityController<ScreenWidgetsService, number> {
   constructor(svc: ScreenWidgetsService) {
     super(svc, SimpleEntityDto, SimplePaginatedDto);
   }

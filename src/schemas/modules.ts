@@ -42,10 +42,10 @@ export const modules = pgTable("modules", {
   // non-null = tenant-specific module
   tenantId: varchar("tenant_id", { length: 24 }),
 
-  // ── Override chain ─────────────────────────────────────────
-  // When set, this module extends the referenced module.
-  // Used for tenant customization of system modules.
-  overridesModuleId: varchar("overrides_module_id", { length: 24 }),
+  	// ── Override chain ─────────────────────────────────────────
+  	// When set, this module extends the referenced module.
+  	// Used for tenant customization of system modules.
+  	overridesModuleId: integer("overrides_module_id"),
 
   // ── Status ─────────────────────────────────────────────────
   displayOrder: integer("display_order").default(0).notNull(),

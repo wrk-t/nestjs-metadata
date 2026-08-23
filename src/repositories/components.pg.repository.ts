@@ -46,7 +46,8 @@ export type TOverrideRow = typeof archComponentOverrides.$inferSelect;
 @Injectable()
 export class ComponentsPgRepository extends Repository<
   any,
-  typeof archComponents
+  typeof archComponents,
+  number
 > {
   protected override tableName = "archComponents";
 
@@ -89,7 +90,7 @@ export class ComponentsPgRepository extends Repository<
    * any tenant-level overrides.
    */
   async getRenderData(
-    componentId: string,
+    componentId: number,
     tenantId?: string,
   ): Promise<{
     component: TComponentRow;
@@ -192,7 +193,7 @@ export class ComponentsPgRepository extends Repository<
   /**
    * Fetch a single blueprint by ID.
    */
-  async findBlueprintById(id: string): Promise<TBlueprintRow | null> {
+  async findBlueprintById(id: number): Promise<TBlueprintRow | null> {
     return await this.execute(async (db) => {
       return (
         (await db.query.archComponentBlueprints.findFirst({
@@ -236,7 +237,7 @@ export class ComponentsPgRepository extends Repository<
   /**
    * Batch-fetch referenced components (for component_ref elements).
    */
-  async findComponentsByIds(ids: string[]): Promise<TComponentRow[]> {
+  async findComponentsByIds(ids: number[]): Promise<TComponentRow[]> {
     if (ids.length === 0) return [];
     return await this.execute(async (db) => {
       return await db
@@ -249,7 +250,7 @@ export class ComponentsPgRepository extends Repository<
   /**
    * Batch-fetch renderer blueprints (for renderer elements).
    */
-  async findBlueprintsByIds(ids: string[]): Promise<TBlueprintRow[]> {
+  async findBlueprintsByIds(ids: number[]): Promise<TBlueprintRow[]> {
     if (ids.length === 0) return [];
     return await this.execute(async (db) => {
       return await db
@@ -260,13 +261,13 @@ export class ComponentsPgRepository extends Repository<
   }
 
   async batchResolveRefs(
-    componentIds: string[],
+    componentIds: number[],
     tenantId?: string,
   ): Promise<
-    Map<string, { blueprint: TBlueprintRow; elements: TElementRow[] }>
+    Map<number, { blueprint: TBlueprintRow; elements: TElementRow[] }>
   > {
     const result = new Map<
-      string,
+      number,
       { blueprint: TBlueprintRow; elements: TElementRow[] }
     >();
     if (componentIds.length === 0) return result;
@@ -278,7 +279,7 @@ export class ComponentsPgRepository extends Repository<
         .where(inArray(archComponents.id, componentIds));
       const bpIds = [
         ...new Set(comps.map((c: any) => c.blueprintId)),
-      ] as string[];
+      ] as number[];
       const bps =
         bpIds.length > 0
           ? await db
@@ -326,7 +327,7 @@ export class ComponentsPgRepository extends Repository<
         }
       }
 
-      const elementsByComp = new Map<string, TElementRow[]>();
+      const elementsByComp = new Map<number, TElementRow[]>();
       for (const el of allElements) {
         const list = elementsByComp.get(el.componentId) || [];
         list.push(el as TElementRow);

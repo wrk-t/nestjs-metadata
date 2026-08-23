@@ -8,12 +8,20 @@ import { ScopedBaseService } from "@wrk-t/nestjs-core";
  * Base CRUD controller for metadata entities.
  * Extend this and provide the service + DTOs.
  */
-export class BaseEntityController<Service extends ScopedBaseService<any, any>> {
+export class BaseEntityController<
+  Service extends ScopedBaseService<any, any, TId>,
+  TId = string,
+> {
   constructor(
     protected readonly svc: Service,
     private readonly dtoClass: new (data: any) => any,
     private readonly paginatedDtoClass?: new (data: any) => any,
   ) {}
+
+  /** Route params arrive as strings — metadata services with numeric ids coerce via PG. */
+  protected toId(id: string): TId {
+    return id as unknown as TId;
+  }
 
   @Post()
   @Version("1")
@@ -24,13 +32,13 @@ export class BaseEntityController<Service extends ScopedBaseService<any, any>> {
     return new CreatedDto(new this.dtoClass(r));
   }
 
-  @Get(":id")
-  @Version("1")
-  @ApiOperation({ summary: "Get by ID" })
-  async findById(@Param("id") id: string) {
-    const r = await this.svc.selectOneById(id);
-    return new OkDto(new this.dtoClass(r));
-  }
+  	@Get(":id")
+  	@Version("1")
+  	@ApiOperation({ summary: "Get by ID" })
+  	async findById(@Param("id") id: string) {
+  		const r = await this.svc.selectOneById(this.toId(id));
+  		return new OkDto(new this.dtoClass(r));
+  	}
 
   @Get()
   @Version("1")
@@ -48,35 +56,35 @@ export class BaseEntityController<Service extends ScopedBaseService<any, any>> {
   @Version("1")
   @ApiOperation({ summary: "Update" })
   @Transactional("MAIN_DB")
-  async update(@Body() data: any, @Param("id") id: string) {
-    const r = await this.svc.updateOneById(id, data);
-    return new OkDto(new this.dtoClass(r));
-  }
+  	async update(@Body() data: any, @Param("id") id: string) {
+  		const r = await this.svc.updateOneById(this.toId(id), data);
+  		return new OkDto(new this.dtoClass(r));
+  	}
 
   @Delete(":id")
   @Version("1")
   @ApiOperation({ summary: "Soft delete" })
   @Transactional("MAIN_DB")
-  async delete(@Param("id") id: string) {
-    const r = await this.svc.softDeleteOneById(id);
-    return new OkDto(new this.dtoClass(r));
-  }
+  	async delete(@Param("id") id: string) {
+  		const r = await this.svc.softDeleteOneById(this.toId(id));
+  		return new OkDto(new this.dtoClass(r));
+  	}
 
   @Patch(":id/soft-delete")
   @Version("1")
   @ApiOperation({ summary: "Soft delete" })
   @Transactional("MAIN_DB")
-  async softDelete(@Param("id") id: string) {
-    const r = await this.svc.softDeleteOneById(id);
-    return new OkDto(new this.dtoClass(r));
-  }
+  	async softDelete(@Param("id") id: string) {
+  		const r = await this.svc.softDeleteOneById(this.toId(id));
+  		return new OkDto(new this.dtoClass(r));
+  	}
 
   @Patch(":id/recover")
   @Version("1")
   @ApiOperation({ summary: "Recover" })
   @Transactional("MAIN_DB")
-  async recover(@Param("id") id: string) {
-    const r = await this.svc.recoverOneById(id);
-    return new OkDto(new this.dtoClass(r));
-  }
+  	async recover(@Param("id") id: string) {
+  		const r = await this.svc.recoverOneById(this.toId(id));
+  		return new OkDto(new this.dtoClass(r));
+  	}
 }

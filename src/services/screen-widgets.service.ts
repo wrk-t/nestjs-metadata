@@ -9,7 +9,8 @@ import { ScreenWidgetsPgRepository } from "../repositories/screen-widgets.pg.rep
 @Injectable()
 export class ScreenWidgetsService extends MetadataBaseService<
   typeof screenWidgets,
-  ScreenWidgetsPgRepository
+  ScreenWidgetsPgRepository,
+  number
 > {
   logger = new Logger(ScreenWidgetsService.name);
 
@@ -50,7 +51,7 @@ export class ScreenWidgetsService extends MetadataBaseService<
   }
 
   protected override guardUpdate(
-    _id: string,
+    _id: number,
     existing: typeof screenWidgets.$inferSelect,
     data: Partial<typeof screenWidgets.$inferInsert>,
   ): ForbiddenDto | undefined {
@@ -63,14 +64,14 @@ export class ScreenWidgetsService extends MetadataBaseService<
   }
 
   protected override guardDelete(
-    _id: string,
+    _id: number,
     _existing: typeof screenWidgets.$inferSelect,
   ): ForbiddenDto | undefined {
     return this.access?.requireScope("screenWidgets", "all") as any;
   }
 
   protected override guardRecover(
-    _id: string,
+    _id: number,
     _existing: typeof screenWidgets.$inferSelect,
   ): any {
     return this.access?.requireScope("screenWidgets", "all") as any;

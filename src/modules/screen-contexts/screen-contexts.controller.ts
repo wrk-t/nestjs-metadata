@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Version } from "@nestjs/common";
+import { Controller, Get, Param, ParseIntPipe, Version } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { OkDto } from "@wrk-t/ts-exc";
 import { BaseEntityController } from "../../common/base-controller";
@@ -7,7 +7,7 @@ import { ScreenContextsService } from "../../services/screen-contexts.service";
 
 @ApiTags("Screen Contexts")
 @Controller("screen-contexts")
-export class ScreenContextsController extends BaseEntityController<ScreenContextsService> {
+export class ScreenContextsController extends BaseEntityController<ScreenContextsService, number> {
   constructor(svc: ScreenContextsService) {
     super(svc, SimpleEntityDto, SimplePaginatedDto);
   }
@@ -15,7 +15,7 @@ export class ScreenContextsController extends BaseEntityController<ScreenContext
   @Get("by-screen/:screenId")
   @Version("1")
   @ApiOperation({ summary: "Get screen context by screen ID" })
-  async findByScreenId(@Param("screenId") screenId: string) {
+  async findByScreenId(@Param("screenId", ParseIntPipe) screenId: number) {
     const result = await this.svc.findByScreenId(screenId);
     return new OkDto(result);
   }

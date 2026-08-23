@@ -12,8 +12,8 @@ import { uiComponents } from "../schemas";
 @Injectable()
 export class UiComponentsPgRepository extends Repository<
   any,
-  typeof uiComponents
-> {
+  typeof uiComponents,
+  number> {
   protected override tableName = "uiComponents";
 
   override applyScope(condition: SQL | undefined): SQL | undefined {

@@ -59,10 +59,10 @@ export const archComponentElements = pgTable("arch_component_elements", {
   ...ids,
   ...timestamps,
 
-  // ── Parent component ─────────────────────────────────────────
-  componentId: varchar("component_id", { length: 24 })
-    .notNull()
-    .references(() => archComponents.id, { onDelete: "cascade" }),
+  	// ── Parent component ─────────────────────────────────────────
+  	componentId: integer("component_id")
+  		.notNull()
+  		.references(() => archComponents.id, { onDelete: "cascade" }),
 
   // ── Which blueprint slot this element fills ──────────────────
   // Must match a slot name declared in the component's blueprint.
@@ -75,37 +75,39 @@ export const archComponentElements = pgTable("arch_component_elements", {
     enum: ["field", "component_ref", "renderer"],
   }).notNull(),
 
-  // ── For "field" type ─────────────────────────────────────────
-  fieldDefinitionId: varchar("field_definition_id", { length: 24 }).references(
-    () => fieldDefinitions.id,
-    { onDelete: "set null" },
-  ),
+  	// ── For "field" type ─────────────────────────────────────────
+  	fieldDefinitionId: integer("field_definition_id").references(
+  		() => fieldDefinitions.id,
+  		{ onDelete: "set null" },
+  	),
 
-  // Optional UI component override for this field/column
-  uiComponentId: varchar("ui_component_id", { length: 24 }).references(
-    () => uiComponents.id,
-    { onDelete: "set null" },
-  ),
+  	// Optional UI component override for this field/column
+  	uiComponentId: integer("ui_component_id").references(
+  		() => uiComponents.id,
+  		{ onDelete: "set null" },
+  	),
 
-  // ── For "component_ref" type ─────────────────────────────────
-  // References another component instance to embed.
-  // e.g. a page referencing a table, a form referencing a section.
-  referencedComponentId: varchar("referenced_component_id", {
-    length: 24,
-  }).references(() => archComponents.id, { onDelete: "cascade" }),
+  	// ── For "component_ref" type ─────────────────────────────────
+  	// References another component instance to embed.
+  	// e.g. a page referencing a table, a form referencing a section.
+  	referencedComponentId: integer("referenced_component_id").references(
+  		() => archComponents.id,
+  		{ onDelete: "cascade" },
+  	),
 
   // How the parent resolves the child's contract inputs.
   // e.g. { "tableId": { source: "literal", value: "tbl_abc" } }
   paramBindings:
     json("param_bindings").$type<Record<string, IElementParamBinding>>(),
 
-  // ── For "renderer" type ──────────────────────────────────────
-  // References a component blueprint (not an instance) — e.g. "badge",
-  // "chart-cell", "action-button". These are leaf renderers with no
-  // slots or children of their own.
-  rendererBlueprintId: varchar("renderer_blueprint_id", {
-    length: 24,
-  }).references(() => archComponentBlueprints.id, { onDelete: "restrict" }),
+  	// ── For "renderer" type ──────────────────────────────────────
+  	// References a component blueprint (not an instance) — e.g. "badge",
+  	// "chart-cell", "action-button". These are leaf renderers with no
+  	// slots or children of their own.
+  	rendererBlueprintId: integer("renderer_blueprint_id").references(
+  		() => archComponentBlueprints.id,
+  		{ onDelete: "restrict" },
+  	),
 
   // Instance-specific renderer config (e.g. badge color, chart type)
   rendererConfig: json("renderer_config").$type<Record<string, unknown>>(),

@@ -8,13 +8,13 @@ import type { IBlueprintSlot } from "../schemas";
  * Rendered element — the output shape that the frontend receives.
  */
 export interface IRenderedElement {
-  id: string;
+  id: number;
   slotName: string;
   elementType: "field" | "component_ref" | "renderer";
 
   // For "field" type
-  fieldDefinitionId?: string | null;
-  uiComponentId?: string | null;
+  fieldDefinitionId?: number | null;
+  uiComponentId?: number | null;
   name?: string | null;
   type?: string | null;
   label?: string | null;
@@ -25,7 +25,7 @@ export interface IRenderedElement {
   paramBindings?: Record<string, unknown> | null;
 
   // For "renderer" type
-  rendererBlueprintId?: string | null;
+  rendererBlueprintId?: number | null;
   rendererConfig?: Record<string, unknown> | null;
 
   // Layout
@@ -41,8 +41,8 @@ export interface IRenderedElement {
  * Rendered component — the resolved output of a component instance.
  */
 export interface IRenderedComponent {
-  id: string;
-  blueprintId: string;
+  id: number;
+  blueprintId: number;
   blueprintName: string;
   name: string;
   displayName: string;

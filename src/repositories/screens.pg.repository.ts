@@ -10,7 +10,7 @@ import { Repository, ILogService } from "@wrk-t/nestjs-core";
 import { screens } from "../schemas";
 
 @Injectable()
-export class ScreensPgRepository extends Repository<any, typeof screens> {
+export class ScreensPgRepository extends Repository<any, typeof screens, number> {
   protected override tableName = "screens";
 
   override applyScope(condition: SQL | undefined): SQL | undefined {
@@ -18,7 +18,7 @@ export class ScreensPgRepository extends Repository<any, typeof screens> {
   }
 
   protected override filterableFields: Record<string, (value: any) => SQL> = {
-    moduleId: (value: string) => eq(screens.moduleId, value),
+    moduleId: (value: string) => eq(screens.moduleId, Number(value)),
     isActive: (value: boolean) => eq(screens.isActive, value),
     tenantId: (value: string) => eq(screens.tenantId, value),
   };

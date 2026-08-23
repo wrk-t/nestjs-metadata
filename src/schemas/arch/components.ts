@@ -34,11 +34,11 @@ export const archComponents = pgTable("arch_components", {
   ...ids,
   ...timestamps,
 
-  // ── Blueprint ────────────────────────────────────────────────
-  // Which component type this instance conforms to.
-  blueprintId: varchar("blueprint_id", { length: 24 })
-    .notNull()
-    .references(() => archComponentBlueprints.id, { onDelete: "restrict" }),
+  	// ── Blueprint ────────────────────────────────────────────────
+  	// Which component type this instance conforms to.
+  	blueprintId: integer("blueprint_id")
+  		.notNull()
+  		.references(() => archComponentBlueprints.id, { onDelete: "restrict" }),
 
   // ── Identity ─────────────────────────────────────────────────
   name: varchar("name", { length: 100 }).notNull(),
@@ -66,13 +66,13 @@ export const archComponents = pgTable("arch_components", {
     IPermissionVisibility[]
   >(),
 
-  // ── Override chain ───────────────────────────────────────────
-  // When set, this component *extends* the referenced component.
-  // Tenant-scoped: a tenant creates a row with this pointing to a
-  // system component. Fields not set here fall back to the base.
-  overridesComponentId: varchar("overrides_component_id", {
-    length: 24,
-  }).references((): any => archComponents.id),
+  	// ── Override chain ───────────────────────────────────────────
+  	// When set, this component *extends* the referenced component.
+  	// Tenant-scoped: a tenant creates a row with this pointing to a
+  	// system component. Fields not set here fall back to the base.
+  	overridesComponentId: integer("overrides_component_id").references(
+  		(): any => archComponents.id,
+  	),
 
   // ── Status ───────────────────────────────────────────────────
   displayOrder: integer("display_order").default(0).notNull(),

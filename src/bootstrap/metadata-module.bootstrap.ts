@@ -26,111 +26,131 @@ import { ScreenWidgetsPgRepository } from "../repositories/screen-widgets.pg.rep
 
 // ── Fixed CUIDs (owned by this package) ─────────────────────────
 export const METADATA_MODULE_CUIDS = {
-  module: "bi2iuk57olbcutokk5euezjz",
+  module: 1,
   entities: {
-    screen: "y4zichc0lp61rbo9m5lcviz3",
-    widget: "dfbmz71y9h7f24o6e4qnhe0i",
-    page: "lp4li6ws9irpgfgtpmyrs1ey",
-    table: "v3z103wiatmsqyphj9bw365a",
-    ref: "qje786ztqm7oy74pq1tfgc3o",
-    colName: "vu6dtf7ocyoxu672q3xd14di",
-    colTableName: "tupjkuuy8q12ptspq1gnsglc",
-    colDisplayName: "jjz85p73r1d0ftjn77z50tt3",
-    colDescription: "emw2v7dp0e9jf6z4wxf7ehh3",
-    colIsActive: "qbo33ktpohoupv5uzftk8725",
+    screen: 1,
+    widget: 1,
+    page: 1,
+    table: 2,
+    ref: 1,
+    colName: 2,
+    colTableName: 3,
+    colDisplayName: 4,
+    colDescription: 5,
+    colIsActive: 6,
   },
   features: {
-    screen: "b7mkf096iufjld6ds0n6muc2",
-    widget: "hct2tv894icw3ou2bc7puhvy",
-    page: "exqu0wqfzx6xk495prgld9mj",
-    table: "s4elzxcagkdbdl34j2clsrh5",
-    ref: "fnr8cogt3rnm2gnzdglt82vb",
-    colName: "z9uneiqlo21obx9v8zvwst2z",
-    colDisplayName: "dttbo72j1cx1iu3672gsfawd",
-    colDescription: "zthuq0ccx9q9ziqhk3ua3pog",
-    colIsActive: "iv6s0yhypos4t783i63dagax",
+    screen: 2,
+    widget: 2,
+    page: 3,
+    table: 4,
+    ref: 7,
+    colName: 8,
+    colDisplayName: 9,
+    colDescription: 10,
+    colIsActive: 11,
   },
   modules: {
-    screen: "n0t5qsx8dk88a7it6203om40",
-    widget: "irw0gqvj8d9dhvpyl4xy9wfp",
-    page: "hw57yl5kqmnkghy7n2oh4zp1",
-    table: "qyd55zvz5lrlnc20e46kg00g",
-    ref: "uomt0ji0pqclzabcoqst7ckr",
-    colName: "dg70l2x60belr2zxjn5jf0nb",
-    colDisplayName: "stlra12y51m0rk9ppp5rvl0u",
-    colIcon: "jmxbapzn96ddgbkmr4l54ucr",
-    colDisplayOrder: "oh20oqh3zpruuowi10nwh485",
-    colIsActive: "qq9jz471hfunxxajul34drwp",
+    screen: 3,
+    widget: 3,
+    page: 5,
+    table: 6,
+    ref: 12,
+    colName: 13,
+    colDisplayName: 14,
+    colIcon: 15,
+    colDisplayOrder: 16,
+    colIsActive: 17,
   },
   screens: {
-    screen: "zs0ribjgzol8cxfwny2y8c3h",
-    widget: "e31tv78qan72c3yhu83b88hj",
-    page: "sx4ov9fjn2g95h5862dtrdeh",
-    table: "vdaufzp3twsg0fqf9pbpa0sb",
-    ref: "ribwvfvef3bwq0gf4fy9rtwq",
-    colName: "zihiohxafy4gy6i1tyfurp1e",
-    colDisplayName: "kmvy4qezirywndow3q4syqog",
-    colIcon: "vz4rgka4x6blfhaf9bjhg3vc",
-    colPathPattern: "j35762wbccirzhkrtzrai6z9",
-    colDisplayOrder: "nwrhfdai33skd9s9dwpsmxl3",
-    colIsActive: "pppbtdawnr33evtit9ssroka",
+    screen: 4,
+    widget: 4,
+    page: 7,
+    table: 8,
+    ref: 18,
+    colName: 19,
+    colDisplayName: 20,
+    colIcon: 21,
+    colPathPattern: 22,
+    colDisplayOrder: 23,
+    colIsActive: 24,
   },
   screenWidgets: {
-    screen: "l6swg6s68yw2t7tm0d49p3hs",
-    widget: "k6c01weyb59bmfq4nrashj8d",
-    page: "eg47mvhhme3n01ezli1pfhru",
-    table: "omwpzb4t172kmc1mozm3itp5",
-    ref: "p11uh6jg1jhbcm7665mwyuwt",
-    colScreenId: "kpduvgfaekapjhkgpkwtiq8v",
-    colWidgetType: "sjk2llvty5rhwpf249s1xkqf",
-    colDisplayOrder: "oh3bm6hu12sfwz6cqveb9uwg",
-    colIsActive: "m94045yzusffgb6gva7a7a7c",
+    screen: 5,
+    widget: 5,
+    page: 9,
+    table: 10,
+    ref: 25,
+    colScreenId: 26,
+    colWidgetType: 27,
+    colDisplayOrder: 28,
+    colIsActive: 29,
   },
   screenContexts: {
-    screen: "pvqfyphg8lsjygp0jmr4xc99",
-    widget: "ld21b7ato2e7mdn333wsr90q",
-    page: "w0riendcm6aijtxbk6llmx45",
-    table: "zex9pkbi3mc9vylkc8psxe12",
-    ref: "rst9lxs8h21a99bhw0g2vflh",
-    colName: "s67wrsfhrc9llfz4ky95o74c",
-    colSource: "l6m4fmxss0lwjxxlfo9dsmu6",
-    colKey: "xd2b3p91jaul07imtr94ro6f",
-    colIsActive: "cpctn62glssj1n49m1mhfmwx",
+    screen: 6,
+    widget: 6,
+    page: 11,
+    table: 12,
+    ref: 30,
+    colName: 31,
+    colSource: 32,
+    colKey: 33,
+    colIsActive: 34,
   },
   components: {
-    screen: "ffgxxv65ac5pm89gk1e0pd6k",
-    widget: "ba4xsaeyrx32e8owqhu2ty44",
-    page: "iuvkpv2h1x750ri53lus598k",
-    table: "fdev4gtely8sdtxyv87jap8q",
-    ref: "zhg2imkwjh0653ada5k6dyi3",
-    colName: "jp0ivlizd8n23m9ggp3x50r6",
-    colDisplayName: "qi9n1jt3u33hsdpn1zb7pgpd",
-    colDisplayOrder: "a8srf99x25xayvh7u0bn2yf3",
-    colIsActive: "b7d1y2dab5xq5kxek3etkdze",
+    screen: 7,
+    widget: 7,
+    page: 13,
+    table: 14,
+    ref: 35,
+    colName: 36,
+    colDisplayName: 37,
+    colDisplayOrder: 38,
+    colIsActive: 39,
   },
   fieldDefinitions: {
-    screen: "xslc2xkdrhy46n7158cryh3h",
-    widget: "y3t3laycmxapowoyncl4btwq",
-    page: "g7t7mafscv4h5je64la2cu8a",
-    table: "pawtmn3ee8ji3l6cuub5vwqm",
-    ref: "u4kswm03giv85px6ru2xzduc",
-    colName: "nbt32pf9r72nt3bhrd5zta75",
-    colDisplayName: "zfjj05e57ex4h6grioegmz68",
-    colType: "c85e7i6wzbxgeh6ya2dnkvox",
-    colIsActive: "mtafic48pgoxs2o2zntwuiv7",
+    screen: 8,
+    widget: 8,
+    page: 15,
+    table: 16,
+    ref: 40,
+    colName: 41,
+    colDisplayName: 42,
+    colType: 43,
+    colIsActive: 44,
   },
   uiComponents: {
-    screen: "situzn2lhnvoplzwpb83m2ty",
-    widget: "x5tz0uzh2ev8huvfh7y7n5wl",
-    page: "drrmxxrmh90ih302gxq7m290",
-    table: "vlpeyg1gr7rcsu59sa3en82c",
-    ref: "kd4547cppmjym9cq7jyw5jtu",
-    colName: "y2coegviu7cg6d7r8nx3scp0",
-    colDisplayName: "c7lmfukopbnn7iqy861um4m9",
-    colType: "v2e1ynf0onbbqrp4bz3a0urj",
-    colIsActive: "dmr4cubfxirf08zw0bxxu12n",
+    screen: 9,
+    widget: 9,
+    page: 17,
+    table: 18,
+    ref: 45,
+    colName: 46,
+    colDisplayName: 47,
+    colType: 48,
+    colIsActive: 49,
   },
-} as const;
+	  screenDetail: {
+	    screen: 10,
+	    widget: 10,
+	    page: 19,
+	    list: 50,
+	    ref: 51,
+	  },
+	  moduleDetail: {
+	    screen: 11,
+	    widget: 11,
+	    page: 20,
+	    table: 21,
+	    ref: 52,
+	    colName: 53,
+	    colDisplayName: 54,
+	    colIcon: 55,
+	    colPathPattern: 56,
+	    colDisplayOrder: 57,
+	    colIsActive: 58,
+	  },
+	} as const;
 
 // ── Registry ────────────────────────────────────────────────────
 export interface MetadataTableColumnDef {
@@ -145,6 +165,8 @@ export interface MetadataTableDef {
   label: string;
   endpoint: string;
   columns: MetadataTableColumnDef[];
+  /** Row-click redirect template (resolved with the row's fields). */
+  onRowClick?: string;
 }
 
 export const METADATA_TABLES: MetadataTableDef[] = [
@@ -171,22 +193,24 @@ export const METADATA_TABLES: MetadataTableDef[] = [
       { name: "isActive", label: "$trl_is_active" },
     ],
   },
-  {
-    key: "modules",
-    label: "$trl_metadata_modules",
-    endpoint: "/api/v1/modules",
-    columns: [
-      { name: "name", label: "$trl_name" },
-      { name: "displayName", label: "$trl_display_name" },
-      { name: "icon", label: "$trl_icon" },
-      { name: "displayOrder", label: "$trl_display_order" },
-      { name: "isActive", label: "$trl_is_active" },
-    ],
-  },
+	  {
+	    key: "modules",
+	    label: "$trl_metadata_modules",
+	    endpoint: "/api/v1/modules",
+	    onRowClick: "/dashboard/metadata/modules/{id}",
+	    columns: [
+	      { name: "name", label: "$trl_name" },
+	      { name: "displayName", label: "$trl_display_name" },
+	      { name: "icon", label: "$trl_icon" },
+	      { name: "displayOrder", label: "$trl_display_order" },
+	      { name: "isActive", label: "$trl_is_active" },
+	    ],
+	  },
   {
     key: "screens",
     label: "$trl_metadata_screens",
     endpoint: "/api/v1/screens",
+    onRowClick: "/dashboard/metadata/screens/{id}",
     columns: [
       { name: "name", label: "$trl_name" },
       { name: "displayName", label: "$trl_display_name" },
@@ -332,47 +356,96 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
         })
       )[0].id;
 
-    // One screen per metadata table
-    for (const [index, def] of METADATA_TABLES.entries()) {
-      await this.ensureTable(
-        def,
-        index,
-        moduleId,
-        pageBp.id,
-        tableBp.id,
-        pageSlot,
-        columnsSlot,
-      );
+    	// One screen per metadata table
+    	for (const [index, def] of METADATA_TABLES.entries()) {
+    		await this.ensureTable(
+    			def,
+    			index,
+    			moduleId,
+    			pageBp.id,
+    			tableBp.id,
+    			pageSlot,
+    			columnsSlot,
+    		);
+    	}
+
+  	// Screen detail page — visual tree of the components used on a screen.
+  	const treeBp = await this.componentsRepo.findBlueprintByName("screen-tree");
+  	if (!treeBp) {
+  		this.logger.warn(
+  			"Blueprint 'screen-tree' not found — skipping metadata screen-detail bootstrap",
+  		);
+  	} else {
+  		await this.ensureScreenDetail(
+  			moduleId,
+  			pageBp.id,
+  			pageSlot,
+  			treeBp.id,
+  		);
+  	}
+
+  	// Module detail page — list of the screens in a module.
+  	await this.ensureModuleDetail(
+  		moduleId,
+  		pageBp.id,
+  		pageSlot,
+  		tableBp.id,
+  		columnsSlot,
+  	);
     }
-  }
 
   private async ensureTable(
     def: MetadataTableDef,
     index: number,
-    moduleId: string,
-    pageBpId: string,
-    tableBpId: string,
+    moduleId: number,
+    pageBpId: number,
+    tableBpId: number,
     pageSlot: string,
     columnsSlot: string,
   ): Promise<void> {
     const cuids = METADATA_MODULE_CUIDS[
       def.key as keyof typeof METADATA_MODULE_CUIDS
-    ] as Record<string, string>;
+    ] as Record<string, number>;
     const key = `metadata${def.key.charAt(0).toUpperCase()}${def.key.slice(1)}`;
 
-    const existingScreen = await this.screensRepo.selectOneById(cuids.screen);
-    if (existingScreen) return; // already bootstrapped
-
-    // Page component
-    if (!(await this.componentsRepo.selectOneById(cuids.page))) {
+    // ── Table component config is upserted on EVERY boot so config
+    // changes (e.g. onRowClick) reach databases bootstrapped by earlier
+    // versions of this code.
+    const tableConfig = {
+      datasource: {
+        type: "rest",
+        endpoint: def.endpoint,
+        method: "GET",
+        pagination: {
+          type: "offset",
+          defaultPageSize: 25,
+          pageSizeOptions: [10, 25, 50, 100],
+        },
+        serverSide: true,
+      },
+      settings: {
+        density: "normal",
+        striped: true,
+        stickyHeader: true,
+        searchable: true,
+        columnToggle: true,
+      },
+      ...(def.onRowClick ? { onRowClick: { redirect: def.onRowClick } } : {}),
+    };
+    const existingTable = await this.componentsRepo.selectOneById(cuids.table);
+    if (existingTable) {
+      await this.componentsRepo.updateOneById(cuids.table, {
+        config: tableConfig,
+      } as any);
+    } else {
       await this.componentsRepo.createOne({
-        id: cuids.page,
-        blueprintId: pageBpId,
-        name: `${key}_page`,
+        id: cuids.table,
+        blueprintId: tableBpId,
+        name: `${key}_list`,
         displayName: def.label,
         description: null,
         category: "system",
-        config: {},
+        config: tableConfig,
         pathPattern: null,
         visibleToPermissions: SUPER_ADMIN_ONLY,
         overridesComponentId: null,
@@ -384,35 +457,19 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
       });
     }
 
-    // Table component (read-only — no toolbar/row actions)
-    if (!(await this.componentsRepo.selectOneById(cuids.table))) {
+    const existingScreen = await this.screensRepo.selectOneById(cuids.screen);
+    if (existingScreen) return; // screen/widgets already bootstrapped
+
+    // Page component
+    if (!(await this.componentsRepo.selectOneById(cuids.page))) {
       await this.componentsRepo.createOne({
-        id: cuids.table,
-        blueprintId: tableBpId,
-        name: `${key}_list`,
+        id: cuids.page,
+        blueprintId: pageBpId,
+        name: `${key}_page`,
         displayName: def.label,
         description: null,
         category: "system",
-        config: {
-          datasource: {
-            type: "rest",
-            endpoint: def.endpoint,
-            method: "GET",
-            pagination: {
-              type: "offset",
-              defaultPageSize: 25,
-              pageSizeOptions: [10, 25, 50, 100],
-            },
-            serverSide: true,
-          },
-          settings: {
-            density: "normal",
-            striped: true,
-            stickyHeader: true,
-            searchable: true,
-            columnToggle: true,
-          },
-        },
+        config: {},
         pathPattern: null,
         visibleToPermissions: SUPER_ADMIN_ONLY,
         overridesComponentId: null,
@@ -487,6 +544,316 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
       meta: null,
     });
 
-    this.logger.log(`Metadata screen '${def.key}' bootstrapped`);
+    	this.logger.log(`Metadata screen '${def.key}' bootstrapped`);
   }
-}
+
+	  /**
+	   * Screen-detail page: `/dashboard/metadata/screens/:screenId`.
+	   * Renders a visual tree of the screen's components (via
+	   * GET /api/v1/screens/:id/tree) — slots, grid positions and field
+	   * definitions preserved, so the diagram can later become an editor.
+	   */
+	  private async ensureScreenDetail(
+	    moduleId: number,
+	    pageBpId: number,
+	    pageSlot: string,
+	    treeBpId: number,
+	  ): Promise<void> {
+	    const cuids = METADATA_MODULE_CUIDS.screenDetail;
+
+	    const treeConfig = {
+	      datasource: {
+	        endpoint: "/api/v1/screens/{screenId}/tree",
+	        method: "GET",
+	      },
+	      settings: {
+	        emptyMessage: "$trl_metadata_no_components",
+	      },
+	    };
+
+	    // Page component (create once)
+	    if (!(await this.componentsRepo.selectOneById(cuids.page))) {
+	      await this.componentsRepo.createOne({
+	        id: cuids.page,
+	        blueprintId: pageBpId,
+	        name: "screen_detail_page",
+	        displayName: "$trl_metadata_screen_detail",
+	        description: null,
+	        category: "system",
+	        config: {},
+	        pathPattern: null,
+	        visibleToPermissions: SUPER_ADMIN_ONLY,
+	        overridesComponentId: null,
+	        displayOrder: 1,
+	        tenantId: null,
+	        isActive: true,
+	        isSystem: true,
+	        meta: null,
+	      });
+	    }
+
+	    // Tree component — config (and blueprint) upserted on EVERY boot so
+	    // databases bootstrapped by earlier versions pick up changes.
+	    const existingTree = await this.componentsRepo.selectOneById(cuids.list);
+	    if (existingTree) {
+	      await this.componentsRepo.updateOneById(cuids.list, {
+	        blueprintId: treeBpId,
+	        config: treeConfig,
+	      } as any);
+	    } else {
+	      await this.componentsRepo.createOne({
+	        id: cuids.list,
+	        blueprintId: treeBpId,
+	        name: "screen_detail_components",
+	        displayName: "$trl_metadata_screen_components",
+	        description: null,
+	        category: "system",
+	        config: treeConfig,
+	        pathPattern: null,
+	        visibleToPermissions: SUPER_ADMIN_ONLY,
+	        overridesComponentId: null,
+	        displayOrder: 1,
+	        tenantId: null,
+	        isActive: true,
+	        isSystem: true,
+	        meta: null,
+	      });
+	    }
+
+	    // Element: page body → tree, bound to the route's screenId
+	    await this.componentsRepo.insertElements([
+	      {
+	        id: cuids.ref,
+	        componentId: cuids.page,
+	        slotName: pageSlot,
+	        elementType: "component_ref",
+	        referencedComponentId: cuids.list,
+	        paramBindings: {
+	          screenId: { source: "route_param", value: "screenId" },
+	        },
+	        grid: { row: 1, col: 1, colSpan: 12 },
+	        displayOrder: 1,
+	        isActive: true,
+	      },
+	    ]);
+
+	    const existingScreen = await this.screensRepo.selectOneById(cuids.screen);
+	    if (existingScreen) return; // screen/widgets already bootstrapped
+
+	    // Screen (inner — hidden from the sidebar via its pathPattern)
+	    await this.screensRepo.createOne({
+	      id: cuids.screen,
+	      moduleId,
+	      parentScreenId: METADATA_MODULE_CUIDS.screens.screen,
+	      name: "screen-detail",
+	      displayName: "$trl_metadata_screen_detail",
+	      icon: "ViewList",
+	      tenantId: null,
+	      overridesScreenId: null,
+	      displayOrder: 10,
+	      isActive: true,
+	      meta: null,
+	      pathPattern: "screens/:screenId",
+	      visibleToPermissions: SUPER_ADMIN_ONLY,
+	    });
+	    await this.widgetsRepo.createOne({
+	      id: cuids.widget,
+	      screenId: cuids.screen,
+	      widgetType: "page",
+	      resourceId: cuids.page,
+	      displayOrder: 1,
+	      widgetOverrides: { title: "$trl_metadata_screen_detail", sizeHint: "full" },
+	      config: {},
+	      tenantId: null,
+	      overridesWidgetId: null,
+	      isActive: true,
+	      meta: null,
+	    });
+
+	    this.logger.log("Metadata screen-detail bootstrapped");
+	  }
+
+	  /**
+	   * Module-detail page: `/dashboard/metadata/modules/:moduleId`.
+	   * Lists the screens that belong to a module (via
+	   * GET /api/v1/screens?moduleId={moduleId}).
+	   */
+	  private async ensureModuleDetail(
+	    moduleId: number,
+	    pageBpId: number,
+	    pageSlot: string,
+	    tableBpId: number,
+	    columnsSlot: string,
+	  ): Promise<void> {
+	    const cuids = METADATA_MODULE_CUIDS.moduleDetail;
+
+	    // Page component (create once)
+	    if (!(await this.componentsRepo.selectOneById(cuids.page))) {
+	      await this.componentsRepo.createOne({
+	        id: cuids.page,
+	        blueprintId: pageBpId,
+	        name: "module_detail_page",
+	        displayName: "$trl_metadata_module_detail",
+	        description: null,
+	        category: "system",
+	        config: {},
+	        pathPattern: null,
+	        visibleToPermissions: SUPER_ADMIN_ONLY,
+	        overridesComponentId: null,
+	        displayOrder: 1,
+	        tenantId: null,
+	        isActive: true,
+	        isSystem: true,
+	        meta: null,
+	      });
+	    }
+
+	    // Screens table — config upserted on EVERY boot so config
+	    // changes reach databases bootstrapped by earlier versions.
+	    const tableConfig = {
+	      datasource: {
+	        type: "rest",
+	        endpoint: "/api/v1/screens?moduleId={moduleId}",
+	        method: "GET",
+	        pagination: {
+	          type: "offset",
+	          defaultPageSize: 25,
+	          pageSizeOptions: [10, 25, 50, 100],
+	        },
+	        serverSide: true,
+	      },
+	      settings: {
+	        density: "normal",
+	        striped: true,
+	        stickyHeader: true,
+	        searchable: true,
+	        columnToggle: true,
+	      },
+	      toolbarActions: [],
+	      rowActions: [],
+	    };
+	    const existingTable = await this.componentsRepo.selectOneById(cuids.table);
+	    if (existingTable) {
+	      await this.componentsRepo.updateOneById(cuids.table, {
+	        config: tableConfig,
+	      } as any);
+	    } else {
+	      await this.componentsRepo.createOne({
+	        id: cuids.table,
+	        blueprintId: tableBpId,
+	        name: "module_detail_screens",
+	        displayName: "$trl_metadata_module_screens",
+	        description: null,
+	        category: "system",
+	        config: tableConfig,
+	        pathPattern: null,
+	        visibleToPermissions: SUPER_ADMIN_ONLY,
+	        overridesComponentId: null,
+	        displayOrder: 1,
+	        tenantId: null,
+	        isActive: true,
+	        isSystem: true,
+	        meta: null,
+	      });
+	    }
+
+	    // Elements: page → table ref (moduleId from the route) + columns
+	    await this.componentsRepo.insertElements([
+	      {
+	        id: cuids.ref,
+	        componentId: cuids.page,
+	        slotName: pageSlot,
+	        elementType: "component_ref",
+	        referencedComponentId: cuids.table,
+	        paramBindings: {
+	          moduleId: { source: "route_param", value: "moduleId" },
+	        },
+	        grid: { row: 1, col: 1, colSpan: 12 },
+	        displayOrder: 1,
+	        isActive: true,
+	      },
+	      ...(
+	        [
+	          { id: cuids.colName, name: "name", label: "$trl_name", width: 180 },
+	          {
+	            id: cuids.colDisplayName,
+	            name: "displayName",
+	            label: "$trl_display_name",
+	            width: 220,
+	          },
+	          { id: cuids.colIcon, name: "icon", label: "$trl_icon", width: 120 },
+	          {
+	            id: cuids.colPathPattern,
+	            name: "pathPattern",
+	            label: "$trl_path_pattern",
+	            width: 200,
+	          },
+	          {
+	            id: cuids.colDisplayOrder,
+	            name: "displayOrder",
+	            label: "$trl_display_order",
+	            width: 120,
+	          },
+	          {
+	            id: cuids.colIsActive,
+	            name: "isActive",
+	            label: "$trl_is_active",
+	            width: 100,
+	          },
+	        ] as const
+	      ).map((col, i) => ({
+	        id: col.id,
+	        componentId: cuids.table,
+	        slotName: columnsSlot,
+	        elementType: "field" as const,
+	        overrides: {
+	          name: col.name,
+	          displayName: col.label,
+	          columnConfig: {
+	            width: col.width,
+	            sortable: true,
+	            filterable: true,
+	            format: { type: "text" as const },
+	          },
+	        },
+	        displayOrder: i + 1,
+	        isActive: true,
+	      })),
+	    ]);
+
+	    const existingScreen = await this.screensRepo.selectOneById(cuids.screen);
+	    if (existingScreen) return; // screen/widgets already bootstrapped
+
+	    // Screen (inner — hidden from the sidebar via its pathPattern)
+	    await this.screensRepo.createOne({
+	      id: cuids.screen,
+	      moduleId,
+	      parentScreenId: METADATA_MODULE_CUIDS.modules.screen,
+	      name: "module-detail",
+	      displayName: "$trl_metadata_module_detail",
+	      icon: "ViewList",
+	      tenantId: null,
+	      overridesScreenId: null,
+	      displayOrder: 11,
+	      isActive: true,
+	      meta: null,
+	      pathPattern: "modules/:moduleId",
+	      visibleToPermissions: SUPER_ADMIN_ONLY,
+	    });
+	    await this.widgetsRepo.createOne({
+	      id: cuids.widget,
+	      screenId: cuids.screen,
+	      widgetType: "page",
+	      resourceId: cuids.page,
+	      displayOrder: 1,
+	      widgetOverrides: { title: "$trl_metadata_module_detail", sizeHint: "full" },
+	      config: {},
+	      tenantId: null,
+	      overridesWidgetId: null,
+	      isActive: true,
+	      meta: null,
+	    });
+
+	    this.logger.log("Metadata module-detail bootstrapped");
+	  }
+	}
