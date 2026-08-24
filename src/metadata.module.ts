@@ -14,7 +14,6 @@ import { FeaturesModule } from "./modules/features/features.module";
 import { FieldDefinitionsModule } from "./modules/field-definitions/field-definitions.module";
 import { ModulesModule } from "./modules/modules-navigation/modules.module";
 import { ScreenContextsModule } from "./modules/screen-contexts/screen-contexts.module";
-import { ScreenWidgetsModule } from "./modules/screen-widgets/screen-widgets.module";
 import { ScreensModule } from "./modules/screens/screens.module";
 import { UiComponentsModule } from "./modules/ui-components/ui-components.module";
 import { ComponentsPgRepository } from "./repositories/components.pg.repository";
@@ -25,7 +24,6 @@ import { SettingsPgRepository } from "./repositories/settings.pg.repository";
 import { FieldDefinitionsPgRepository } from "./repositories/field-definitions.pg.repository";
 import { ModulesPgRepository } from "./repositories/modules.pg.repository";
 import { ScreenContextsPgRepository } from "./repositories/screen-contexts.pg.repository";
-import { ScreenWidgetsPgRepository } from "./repositories/screen-widgets.pg.repository";
 import { ScreensPgRepository } from "./repositories/screens.pg.repository";
 import { UiComponentsPgRepository } from "./repositories/ui-components.pg.repository";
 import { ComponentsService } from "./services/components.service";
@@ -36,9 +34,9 @@ import { SettingsService } from "./services/settings.service";
 import { FieldDefinitionsService } from "./services/field-definitions.service";
 import { ModulesService } from "./services/modules.service";
 import { ScreenContextsService } from "./services/screen-contexts.service";
-import { ScreenWidgetsService } from "./services/screen-widgets.service";
 import { ScreensService } from "./services/screens.service";
 import { UiComponentsService } from "./services/ui-components.service";
+import { CapabilityService } from "./services/capability.service";
 
 @Module({})
 export class MetadataModule {
@@ -75,19 +73,18 @@ export class MetadataModule {
       EntitiesService,
       FieldDefinitionsService,
       UiComponentsService,
-      ScreensService,
-      ScreenWidgetsService,
-      ScreenContextsService,
-	      ModulesService,
-	      FeaturesService,
-	      SettingsService,
-	      ComponentsService,
-	      // ── Repositories ──
+	      ScreensService,
+	      ScreenContextsService,
+		      ModulesService,
+		      FeaturesService,
+		      SettingsService,
+		      ComponentsService,
+		      CapabilityService,
+		      // ── Repositories ──
 	      EntitiesPgRepository,
 	      FieldDefinitionsPgRepository,
 	      UiComponentsPgRepository,
 	      ScreensPgRepository,
-	      ScreenWidgetsPgRepository,
 	      ScreenContextsPgRepository,
 	      ModulesPgRepository,
 	      FeaturesPgRepository,
@@ -114,10 +111,9 @@ export class MetadataModule {
         EntitiesModule,
         FieldDefinitionsModule,
         UiComponentsModule,
-        ScreensModule,
-        ScreenWidgetsModule,
-        ScreenContextsModule,
-        ModulesModule,
+	        ScreensModule,
+	        ScreenContextsModule,
+	        ModulesModule,
         FeaturesModule,
         ComponentsModule,
         ...(options.imports ?? []),
@@ -127,13 +123,13 @@ export class MetadataModule {
         EntitiesService,
         FieldDefinitionsService,
         UiComponentsService,
-        ScreensService,
-        ScreenWidgetsService,
-        ScreenContextsService,
-	        ModulesService,
+	        ScreensService,
+	        ScreenContextsService,
+		        ModulesService,
 	        FeaturesService,
 	        SettingsService,
 	        ComponentsService,
+	        CapabilityService,
 	        ...(features.accessControl ? [AccessControlService] : []),
       ],
     };

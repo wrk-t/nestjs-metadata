@@ -56,7 +56,7 @@ export type { IBlueprintDefinition, TBlueprintKey } from "./blueprints";
 	RadioField,
 	RawJson,
 	Renderer,
-	ScreenLayout,
+	Screen,
 	ScreenTree,
 	SelectField,
 	SpeedGauge,
@@ -75,7 +75,9 @@ export type { IBlueprintDefinition, TBlueprintKey } from "./blueprints";
 	normalizeChildren,
 } from "./nodes";
 export type { AuthoringChild, Children, IComponentIdentity } from "./nodes";
-export type {
+export type { IScreenIdentity } from "./nodes";
+export type { IEditOp, TEditOperation } from "../schemas";
+	export type {
 	FieldDatasource,
 	FieldDefRow,
 	FieldType,
@@ -93,6 +95,7 @@ export type {
 	IDateRangePickerConfig,
 	IFieldConfig,
 	IFormConfig,
+	IFormSubmitConfig,
 	IGridConfig,
 	IInfoConfig,
 	ILayoutConfig,

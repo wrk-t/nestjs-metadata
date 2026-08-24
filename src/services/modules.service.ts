@@ -10,6 +10,7 @@ import { satisfiesTenantRequirement } from "../common/tenant-requirement";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 import { modules } from "../schemas";
 import { ModulesPgRepository } from "../repositories/modules.pg.repository";
+import { CapabilityService } from "./capability.service";
 
 @Injectable()
 export class ModulesService extends MetadataBaseService<
@@ -19,16 +20,17 @@ export class ModulesService extends MetadataBaseService<
 > {
   logger = new Logger(ModulesService.name);
 
-  constructor(
-    repo: ModulesPgRepository,
-    @Optional() private readonly access?: AccessControlService,
-    @Optional() requestContext?: RequestContext,
-    @Optional()
-    @Inject(TRANSLATION_SERVICE)
-    readonly translationService?: ITranslationService,
-  ) {
-    super(repo, requestContext, translationService);
-  }
+	  constructor(
+	    repo: ModulesPgRepository,
+	    @Optional() private readonly access?: AccessControlService,
+	    @Optional() requestContext?: RequestContext,
+	    @Optional()
+	    @Inject(TRANSLATION_SERVICE)
+	    readonly translationService?: ITranslationService,
+	    @Optional() private readonly capability?: CapabilityService,
+	  ) {
+	    super(repo, requestContext, translationService);
+	  }
 
   protected override guardCreate(
     data: typeof modules.$inferInsert,
@@ -88,21 +90,23 @@ export class ModulesService extends MetadataBaseService<
   // List — filtered by tenant-membership visibility
   // ────────────────────────────────────────────────────────────────
 
-  override async findMany(filters: any) {
-    const result = await super.findMany(filters);
-    if (result instanceof HttpException) return result;
+	  override async findMany(filters: any) {
+	    const result = await super.findMany(filters);
+	    if (result instanceof HttpException) return result;
 
-    const tenantId = this.requestContext?.getTenantId();
-    const isSuperAdmin = this.requestContext?.getIsSuperAdmin() ?? false;
-    result.data = result.data.filter((m: any) => {
-      // visibleToSuperAdmin modules are only returned to super admins
-      if (m.visibleToSuperAdmin && !isSuperAdmin) return false;
-      return (
-        isSuperAdmin ||
-        satisfiesTenantRequirement(m.tenantRequirement, tenantId)
-      );
-    });
+	const tenantId = this.requestContext?.getTenantId();
+	const isSuperAdmin = this.requestContext?.getIsSuperAdmin() ?? false;
+	const kept: any[] = [];
+	for (const m of result.data) {
+		// visibleToSuperAdmin modules are only returned to super admins
+		if (m.visibleToSuperAdmin && !isSuperAdmin) continue;
+		if (!isSuperAdmin && !satisfiesTenantRequirement(m.tenantRequirement, tenantId)) continue;
+		// Tier + feature gating (features resolve per tenant; super admin bypasses)
+		if (this.capability && !(await this.capability.canAccess(m))) continue;
+		kept.push(m);
+	}
+	    result.data = kept;
 
-    return result;
-  }
+	    return result;
+	  }
 }

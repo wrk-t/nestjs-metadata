@@ -106,23 +106,35 @@ export abstract class Component<
 		this.blueprintId = getBlueprintId(
 			(this.constructor as typeof Component).blueprintKey,
 		);
-		// ── Seed on construction: register this row + edges to children
-		// into the active SeedContext (the current seed file). When no
-		// context is active (e.g. a shared instance constructed in an
-		// imported module), the row is ensured by whichever parent
-		// references it — `emitEdge` re-adds child rows idempotently.
+		// ── Seed on construction: when a context is active, register the
+		// whole subtree (recursive ensureIn). When no context is active
+		// (e.g. shared components/fields constructed in their own files at
+		// import time — the React-like seed layout), the subtree is
+		// registered by whichever parent/screen references it.
 		const ctx = SeedContext.current;
-		if (ctx) {
-			ctx.addComponent(this.seedRow());
-			for (const [slot, child, index] of this.entries()) {
-				const order = this.effectiveOrder(child, index + 1);
-				this.emitEdge(ctx, slot, child, order);
-			}
-		}
+		if (ctx) this.ensureIn(ctx);
 	}
 
 	get id(): number {
 		return this.config.id;
+	}
+
+	/**
+	 * Register this component + its whole subtree into a context.
+	 * Idempotent per context: a shared instance referenced by several
+	 * parents registers its rows/edges exactly once; each parent still
+	 * emits its own edge. Pins each child's displayOrder to its slot
+	 * position (first parent wins).
+	 */
+	ensureIn(ctx: SeedContext): void {
+		if (ctx.hasEnsured(this.id)) return;
+		ctx.markEnsured(this.id);
+		ctx.addComponent(this.seedRow());
+		for (const [slot, child, index] of this.entries()) {
+			const order = this.effectiveOrder(child, index + 1);
+			this.emitEdge(ctx, slot, child, order);
+			if (child instanceof Component) ctx.setDisplayOrder(child.id, order);
+		}
 	}
 
 	/** (slot, child, index) pairs — default slot first, then node-slot config keys. */
@@ -215,11 +227,10 @@ export abstract class Component<
 		}
 
 		if (child instanceof Component) {
-			// Ensure the row exists in THIS context (idempotent — also covers
-			// shared instances constructed outside any seed context) and pin
-			// its displayOrder to this slot (first parent wins).
-			ctx.addComponent(child.seedRow());
-			ctx.setDisplayOrder(child.id, displayOrder);
+			// Ensure the whole subtree in THIS context (idempotent — also
+			// covers shared instances constructed outside any seed context)
+			// and pin its displayOrder to this slot (first parent wins).
+			child.ensureIn(ctx);
 			ctx.elements.push({
 				...base,
 				elementType: "component_ref",
@@ -230,7 +241,7 @@ export abstract class Component<
 		}
 
 		if (child instanceof FieldNode) {
-			ctx.addFieldDefinition(child.fieldDefRow());
+			child.ensureIn(ctx);
 			const overrides = child.elementOverrides();
 			const row: (typeof ctx.elements)[number] = {
 				...base,
@@ -273,12 +284,47 @@ const IDENTITY_KEYS = new Set([
 	"meta",
 ]);
 
-// ── Concrete blueprint classes ────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────
+// Screen — a navigation screen that mounts a root component.
+//
+//   new Screen({ id, moduleId, name, ... }, rootComponent)
+//
+// Everything on a screen is a component; the screen simply points at
+// its root (usually a Layout/Grid tree) via screens.componentId — the
+// old screen_widgets indirection is gone. Register with
+// `seed.addScreen(screen)`.
+// ──────────────────────────────────────────────────────────────────
 
-export class ScreenLayout extends Component<IComponentIdentity> {
-	static readonly blueprintKey = "screenLayoutGeneral";
-	static readonly defaultSlot = "body";
+export interface IScreenIdentity {
+	/** Static id from the app registry (screens/… in cuid.ts). */
+	id: number;
+	moduleId: number;
+	name?: string;
+	displayName?: string;
+	icon?: string;
+	pathPattern?: string | null;
+	visibleToPermissions?: IPermissionVisibility[] | null;
+	displayOrder?: number;
+	/** Minimum tier to see this screen ("solo" | "team" | "enterprise"). */
+	requiredTier?: string | null;
+	/** Feature flag (features.name) that must be enabled for the tenant. */
+	requiresFeature?: string | null;
+	meta?: Record<string, unknown> | null;
 }
+
+export class Screen extends AuthoringNode {
+	readonly config: IScreenIdentity;
+	/** Root component the screen mounts — a node or a bare component id. */
+	readonly root: Component | number;
+
+	constructor(config: IScreenIdentity, root: Component | number) {
+		super();
+		this.config = config;
+		this.root = root;
+	}
+}
+
+// ── Concrete blueprint classes ────────────────────────────────────
 
 export class Page extends Component<IComponentIdentity> {
 	static readonly blueprintKey = "page";
@@ -437,13 +483,18 @@ export abstract class FieldNode extends AuthoringNode {
 	constructor(config: IFieldConfig) {
 		super();
 		this.config = config;
-		// Seed on construction: register the field definition row. When no
-		// context is active, parents re-ensure it at edge time.
+		// Seed on construction: register the field definition row when a
+		// context is active. Otherwise the parent's ensureIn registers it.
 		SeedContext.current?.addFieldDefinition(this.fieldDefRow());
 	}
 
 	get id(): number {
 		return this.config.id;
+	}
+
+	/** Register the field definition row (idempotent by id). */
+	ensureIn(ctx: SeedContext): void {
+		ctx.addFieldDefinition(this.fieldDefRow());
 	}
 
 	/** Instance-specific element overrides (renderer-facing). */
@@ -453,9 +504,11 @@ export abstract class FieldNode extends AuthoringNode {
 		if (cfg.label != null || cfg.displayName != null) {
 			out.displayName = cfg.displayName ?? cfg.label;
 		}
+		if (cfg.columnName != null) out.name = cfg.columnName;
 		if (cfg.description != null) out.description = cfg.description;
 		if (cfg.isRequired != null) out.isRequired = cfg.isRequired;
 		if (cfg.isReadOnly != null) out.isReadOnly = cfg.isReadOnly;
+		if (cfg.readOnlyWhen != null) out.readOnlyWhen = cfg.readOnlyWhen;
 		if (cfg.isHidden != null) out.hidden = cfg.isHidden;
 		if (cfg.placeholder != null) out.placeholder = cfg.placeholder;
 		if (cfg.validations != null) out.validations = cfg.validations;

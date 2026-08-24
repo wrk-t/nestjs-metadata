@@ -3,16 +3,17 @@
 //
 // Self-registers the built-in "metadata" navigation module on app
 // bootstrap: one screen per metadata table (entities, features,
-// modules, screens, screen widgets, screen contexts, components,
-// field definitions, ui components), each rendering a simple
-// read-only table — no toolbar or row actions.
+// modules, screens, screen contexts, components, field definitions,
+// ui components), each rendering a simple read-only table — no
+// toolbar or row actions. Each screen mounts its root component
+// directly (screens.componentId).
 //
 // Super-admin only:
 //   - modules.visibleToSuperAdmin = true (enforced in ModulesService)
 //   - every screen carries visibleToPermissions on the "users"
 //     resource — the host's super-admin-only permission
 //
-// Idempotent: rows are keyed by fixed CUIDs below and skipped when
+// Idempotent: rows are keyed by fixed ids below and skipped when
 // they already exist. Safe to run on every boot.
 // ──────────────────────────────────────────────────────────────────
 
@@ -22,135 +23,118 @@ import { modules } from "../schemas";
 import { ComponentsPgRepository } from "../repositories/components.pg.repository";
 import { ModulesPgRepository } from "../repositories/modules.pg.repository";
 import { ScreensPgRepository } from "../repositories/screens.pg.repository";
-import { ScreenWidgetsPgRepository } from "../repositories/screen-widgets.pg.repository";
 
-// ── Fixed CUIDs (owned by this package) ─────────────────────────
+// ── Fixed ids (owned by this package) ──────────────────────────
+// Dedicated 1000+ range so the bootstrap NEVER collides with the app's
+// static seed registries (modules/screens 1–5, components 1–125,
+// field definitions 1–45, elements auto-minted 1..N in seed.ts). The ids
+// are per-table namespaces — the same number can be a screen, component
+// and element id in different tables.
 export const METADATA_MODULE_CUIDS = {
-  module: 1,
+  module: 1000,
   entities: {
-    screen: 1,
-    widget: 1,
-    page: 1,
-    table: 2,
-    ref: 1,
-    colName: 2,
-    colTableName: 3,
-    colDisplayName: 4,
-    colDescription: 5,
-    colIsActive: 6,
+    screen: 1001,
+    page: 1001,
+    table: 1002,
+    ref: 1001,
+    colName: 1002,
+    colTableName: 1003,
+    colDisplayName: 1004,
+    colDescription: 1005,
+    colIsActive: 1006,
   },
   features: {
-    screen: 2,
-    widget: 2,
-    page: 3,
-    table: 4,
-    ref: 7,
-    colName: 8,
-    colDisplayName: 9,
-    colDescription: 10,
-    colIsActive: 11,
+    screen: 1002,
+    page: 1003,
+    table: 1004,
+    ref: 1007,
+    colName: 1008,
+    colDisplayName: 1009,
+    colDescription: 1010,
+    colIsActive: 1011,
   },
   modules: {
-    screen: 3,
-    widget: 3,
-    page: 5,
-    table: 6,
-    ref: 12,
-    colName: 13,
-    colDisplayName: 14,
-    colIcon: 15,
-    colDisplayOrder: 16,
-    colIsActive: 17,
+    screen: 1003,
+    page: 1005,
+    table: 1006,
+    ref: 1012,
+    colName: 1013,
+    colDisplayName: 1014,
+    colIcon: 1015,
+    colDisplayOrder: 1016,
+    colIsActive: 1017,
   },
   screens: {
-    screen: 4,
-    widget: 4,
-    page: 7,
-    table: 8,
-    ref: 18,
-    colName: 19,
-    colDisplayName: 20,
-    colIcon: 21,
-    colPathPattern: 22,
-    colDisplayOrder: 23,
-    colIsActive: 24,
-  },
-  screenWidgets: {
-    screen: 5,
-    widget: 5,
-    page: 9,
-    table: 10,
-    ref: 25,
-    colScreenId: 26,
-    colWidgetType: 27,
-    colDisplayOrder: 28,
-    colIsActive: 29,
+    screen: 1004,
+    page: 1007,
+    table: 1008,
+    ref: 1018,
+    colName: 1019,
+    colDisplayName: 1020,
+    colIcon: 1021,
+    colPathPattern: 1022,
+    colDisplayOrder: 1023,
+    colIsActive: 1024,
   },
   screenContexts: {
-    screen: 6,
-    widget: 6,
-    page: 11,
-    table: 12,
-    ref: 30,
-    colName: 31,
-    colSource: 32,
-    colKey: 33,
-    colIsActive: 34,
+    screen: 1005,
+    page: 1009,
+    table: 1010,
+    ref: 1025,
+    colName: 1026,
+    colSource: 1027,
+    colKey: 1028,
+    colIsActive: 1029,
   },
   components: {
-    screen: 7,
-    widget: 7,
-    page: 13,
-    table: 14,
-    ref: 35,
-    colName: 36,
-    colDisplayName: 37,
-    colDisplayOrder: 38,
-    colIsActive: 39,
+    screen: 1006,
+    page: 1011,
+    table: 1012,
+    ref: 1030,
+    colName: 1031,
+    colDisplayName: 1032,
+    colDisplayOrder: 1033,
+    colIsActive: 1034,
   },
   fieldDefinitions: {
-    screen: 8,
-    widget: 8,
-    page: 15,
-    table: 16,
-    ref: 40,
-    colName: 41,
-    colDisplayName: 42,
-    colType: 43,
-    colIsActive: 44,
+    screen: 1007,
+    page: 1013,
+    table: 1014,
+    ref: 1035,
+    colName: 1036,
+    colDisplayName: 1037,
+    colType: 1038,
+    colIsActive: 1039,
   },
   uiComponents: {
-    screen: 9,
-    widget: 9,
-    page: 17,
-    table: 18,
-    ref: 45,
-    colName: 46,
-    colDisplayName: 47,
-    colType: 48,
-    colIsActive: 49,
+    screen: 1008,
+    page: 1015,
+    table: 1016,
+    ref: 1040,
+    colName: 1041,
+    colDisplayName: 1042,
+    colType: 1043,
+    colIsActive: 1044,
   },
-	  screenDetail: {
-	    screen: 10,
-	    widget: 10,
-	    page: 19,
-	    list: 50,
-	    ref: 51,
-	  },
-	  moduleDetail: {
-	    screen: 11,
-	    widget: 11,
-	    page: 20,
-	    table: 21,
-	    ref: 52,
-	    colName: 53,
-	    colDisplayName: 54,
-	    colIcon: 55,
-	    colPathPattern: 56,
-	    colDisplayOrder: 57,
-	    colIsActive: 58,
-	  },
-	} as const;
+  screenDetail: {
+    screen: 1009,
+    page: 1017,
+    list: 1045,
+    ref: 1046,
+  },
+  moduleDetail: {
+    screen: 1010,
+    page: 1018,
+    table: 1019,
+    ref: 1047,
+    colName: 1048,
+    colDisplayName: 1049,
+    colIcon: 1050,
+    colPathPattern: 1051,
+    colDisplayOrder: 1052,
+    colIsActive: 1053,
+  },
+} as const;
 
 // ── Registry ────────────────────────────────────────────────────
 export interface MetadataTableColumnDef {
@@ -221,17 +205,6 @@ export const METADATA_TABLES: MetadataTableDef[] = [
     ],
   },
   {
-    key: "screenWidgets",
-    label: "$trl_metadata_screenWidgets",
-    endpoint: "/api/v1/screen-widgets",
-    columns: [
-      { name: "screenId", label: "$trl_screen_id" },
-      { name: "widgetType", label: "$trl_widget_type" },
-      { name: "displayOrder", label: "$trl_display_order" },
-      { name: "isActive", label: "$trl_is_active" },
-    ],
-  },
-  {
     key: "screenContexts",
     label: "$trl_metadata_screenContexts",
     endpoint: "/api/v1/screen-contexts",
@@ -293,7 +266,6 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
   constructor(
     private readonly modulesRepo: ModulesPgRepository,
     private readonly screensRepo: ScreensPgRepository,
-    private readonly widgetsRepo: ScreenWidgetsPgRepository,
     private readonly componentsRepo: ComponentsPgRepository,
   ) {}
 
@@ -308,18 +280,16 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
   }
 
   // ── Ensure module + screens exist (idempotent) ────────────────
-  private async ensureMetadataModule(): Promise<void> {
-    // Hosts seed the general screen-layout blueprint under either spelling.
-    const pageBp =
-      (await this.componentsRepo.findBlueprintByName("screenLayoutGeneral")) ??
-      (await this.componentsRepo.findBlueprintByName("screen_layout_general"));
-    const tableBp = await this.componentsRepo.findBlueprintByName("table");
-    if (!pageBp || !tableBp) {
-      this.logger.warn(
-        "Blueprints 'screenLayoutGeneral'/'table' not found — skipping metadata module bootstrap",
-      );
-      return;
-    }
+	  private async ensureMetadataModule(): Promise<void> {
+	    // The general layout blueprint — the reusable component screens mount.
+	    const pageBp = await this.componentsRepo.findBlueprintByName("layout");
+	    const tableBp = await this.componentsRepo.findBlueprintByName("table");
+	    if (!pageBp || !tableBp) {
+	      this.logger.warn(
+	        "Blueprints 'layout'/'table' not found — skipping metadata module bootstrap",
+	      );
+	      return;
+	    }
 
     const pageSlot =
       pageBp.slots.find((s) => s.name === "body")?.name ??
@@ -441,14 +411,13 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
       await this.componentsRepo.createOne({
         id: cuids.table,
         blueprintId: tableBpId,
-        name: `${key}_list`,
+	        name: `${key}_list`,
         displayName: def.label,
         description: null,
         category: "system",
         config: tableConfig,
         pathPattern: null,
         visibleToPermissions: SUPER_ADMIN_ONLY,
-        overridesComponentId: null,
         displayOrder: 1,
         tenantId: null,
         isActive: true,
@@ -457,22 +426,21 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
       });
     }
 
-    const existingScreen = await this.screensRepo.selectOneById(cuids.screen);
-    if (existingScreen) return; // screen/widgets already bootstrapped
+	    const existingScreen = await this.screensRepo.selectOneById(cuids.screen);
+	    if (existingScreen) return; // screen already bootstrapped
 
-    // Page component
+	    // Page component
     if (!(await this.componentsRepo.selectOneById(cuids.page))) {
       await this.componentsRepo.createOne({
         id: cuids.page,
         blueprintId: pageBpId,
-        name: `${key}_page`,
+	        name: `${key}_page`,
         displayName: def.label,
         description: null,
         category: "system",
         config: {},
         pathPattern: null,
         visibleToPermissions: SUPER_ADMIN_ONLY,
-        overridesComponentId: null,
         displayOrder: 1,
         tenantId: null,
         isActive: true,
@@ -514,37 +482,25 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
       })),
     ]);
 
-    // Screen + widget
-    await this.screensRepo.createOne({
-      id: cuids.screen,
-      moduleId,
-      parentScreenId: null,
-      name: def.key,
-      displayName: def.label,
-      icon: "ViewList",
-      tenantId: null,
-      overridesScreenId: null,
-      displayOrder: index + 1,
-      isActive: true,
-      meta: null,
-      pathPattern: null,
-      visibleToPermissions: SUPER_ADMIN_ONLY,
-    });
-    await this.widgetsRepo.createOne({
-      id: cuids.widget,
-      screenId: cuids.screen,
-      widgetType: "page",
-      resourceId: cuids.page,
-      displayOrder: 1,
-      widgetOverrides: { title: def.label, sizeHint: "full" },
-      config: {},
-      tenantId: null,
-      overridesWidgetId: null,
-      isActive: true,
-      meta: null,
-    });
+	    // Screen (mounts the page component directly — no widget row)
+	    await this.screensRepo.createOne({
+	      id: cuids.screen,
+	      moduleId,
+	      parentScreenId: null,
+	      name: def.key,
+	      displayName: def.label,
+	      icon: "ViewList",
+	      tenantId: null,
+	      overridesScreenId: null,
+	      displayOrder: index + 1,
+	      isActive: true,
+	      meta: null,
+	      pathPattern: null,
+	      visibleToPermissions: SUPER_ADMIN_ONLY,
+	      componentId: cuids.page,
+	    });
 
-    	this.logger.log(`Metadata screen '${def.key}' bootstrapped`);
+	    this.logger.log(`Metadata screen '${def.key}' bootstrapped`);
   }
 
 	  /**
@@ -583,7 +539,6 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
 	        config: {},
 	        pathPattern: null,
 	        visibleToPermissions: SUPER_ADMIN_ONLY,
-	        overridesComponentId: null,
 	        displayOrder: 1,
 	        tenantId: null,
 	        isActive: true,
@@ -611,7 +566,6 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
 	        config: treeConfig,
 	        pathPattern: null,
 	        visibleToPermissions: SUPER_ADMIN_ONLY,
-	        overridesComponentId: null,
 	        displayOrder: 1,
 	        tenantId: null,
 	        isActive: true,
@@ -638,7 +592,7 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
 	    ]);
 
 	    const existingScreen = await this.screensRepo.selectOneById(cuids.screen);
-	    if (existingScreen) return; // screen/widgets already bootstrapped
+	    if (existingScreen) return; // screen already bootstrapped
 
 	    // Screen (inner — hidden from the sidebar via its pathPattern)
 	    await this.screensRepo.createOne({
@@ -655,19 +609,7 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
 	      meta: null,
 	      pathPattern: "screens/:screenId",
 	      visibleToPermissions: SUPER_ADMIN_ONLY,
-	    });
-	    await this.widgetsRepo.createOne({
-	      id: cuids.widget,
-	      screenId: cuids.screen,
-	      widgetType: "page",
-	      resourceId: cuids.page,
-	      displayOrder: 1,
-	      widgetOverrides: { title: "$trl_metadata_screen_detail", sizeHint: "full" },
-	      config: {},
-	      tenantId: null,
-	      overridesWidgetId: null,
-	      isActive: true,
-	      meta: null,
+	      componentId: cuids.page,
 	    });
 
 	    this.logger.log("Metadata screen-detail bootstrapped");
@@ -699,7 +641,6 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
 	        config: {},
 	        pathPattern: null,
 	        visibleToPermissions: SUPER_ADMIN_ONLY,
-	        overridesComponentId: null,
 	        displayOrder: 1,
 	        tenantId: null,
 	        isActive: true,
@@ -748,7 +689,6 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
 	        config: tableConfig,
 	        pathPattern: null,
 	        visibleToPermissions: SUPER_ADMIN_ONLY,
-	        overridesComponentId: null,
 	        displayOrder: 1,
 	        tenantId: null,
 	        isActive: true,
@@ -822,7 +762,7 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
 	    ]);
 
 	    const existingScreen = await this.screensRepo.selectOneById(cuids.screen);
-	    if (existingScreen) return; // screen/widgets already bootstrapped
+	    if (existingScreen) return; // screen already bootstrapped
 
 	    // Screen (inner — hidden from the sidebar via its pathPattern)
 	    await this.screensRepo.createOne({
@@ -839,19 +779,7 @@ export class MetadataModuleBootstrapService implements OnApplicationBootstrap {
 	      meta: null,
 	      pathPattern: "modules/:moduleId",
 	      visibleToPermissions: SUPER_ADMIN_ONLY,
-	    });
-	    await this.widgetsRepo.createOne({
-	      id: cuids.widget,
-	      screenId: cuids.screen,
-	      widgetType: "page",
-	      resourceId: cuids.page,
-	      displayOrder: 1,
-	      widgetOverrides: { title: "$trl_metadata_module_detail", sizeHint: "full" },
-	      config: {},
-	      tenantId: null,
-	      overridesWidgetId: null,
-	      isActive: true,
-	      meta: null,
+	      componentId: cuids.page,
 	    });
 
 	    this.logger.log("Metadata module-detail bootstrapped");

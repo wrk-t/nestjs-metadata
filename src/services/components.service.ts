@@ -10,9 +10,12 @@ import { archComponents } from "../schemas";
 import { TRANSLATION_SERVICE } from "../metadata.types";
 import { ComponentsPgRepository } from "../repositories/components.pg.repository";
 import type {
+  TBlueprintRow,
   TComponentRenderData,
+  TComponentRow,
   TElementRow,
 } from "../repositories/components.pg.repository";
+import { mergeDelta } from "./component-delta";
 import type {
   IComponentRenderResponse,
   IRenderedComponent,
@@ -129,11 +132,15 @@ export class ComponentsService extends MetadataBaseService<
       return new BadRequestDto("Component nesting too deep (max 8 levels)");
     }
 
-    const locale = options?.locale ?? this.requestContext?.getLocale() ?? "en";
-    const tenantId = options?.tenantId;
-    const ctx = options?.context ?? {};
+	    const locale = options?.locale ?? this.requestContext?.getLocale() ?? "en";
+	    // Explicit header wins; otherwise the authenticated request's tenant
+	    // context (x-workspace: org:<tenantId> — what the browser sends) is
+	    // used, so tenant-scoped deltas apply on real renders.
+	    const tenantId =
+	      options?.tenantId ?? this.requestContext?.getTenantId() ?? null;
+	    const ctx = options?.context ?? {};
 
-    const data = await this.repo.getRenderData(
+    const data = await this.resolveComponentData(
       componentId,
       tenantId ?? undefined,
     );
@@ -143,13 +150,10 @@ export class ComponentsService extends MetadataBaseService<
     // is available at render time.
     await this.resolveRefs(data, tenantId, depth);
 
-    // Build the rendered component
-    const rendered = this.toRenderedComponent(data, ctx);
+	    // Build the rendered component
+	    const rendered = this.toRenderedComponent(data, ctx);
 
-    // Apply tenant overrides
-    this.applyOverrides(rendered, data.overrides, data.blueprint);
-
-    // Resolve translations
+	    // Resolve translations
     if (this.translationService) {
       this.logger.log(
         `getRender: resolving translations for component ${componentId} (locale=${locale}, tenantId=${tenantId})`,
@@ -173,7 +177,72 @@ export class ComponentsService extends MetadataBaseService<
     return { component: rendered };
   }
 
-  // ── Private helpers ────────────────────────────────────────────
+	  // ── Private helpers ────────────────────────────────────────────
+
+	  /**
+	   * Resolve a component id to its render data, applying the tenant's
+	   * delta when one exists.
+	   *
+	   * Two ways a component can be customized:
+	   *   1. the row itself is a delta (editOps set, baseComponentId → base)
+	   *   2. a tenant delta row targets the base (baseComponentId = id)
+	   *
+	   * Returns the MERGED component + elements — the delta is applied at
+	   * read time; nothing is materialized.
+	   */
+	  async resolveComponentData(
+	    componentId: number,
+	    tenantId?: string | null,
+	  ): Promise<TComponentRenderData | null> {
+	    const raw = await this.repo.getRenderData(
+	      componentId,
+	      tenantId ?? undefined,
+	    );
+	    if (!raw) return null;
+
+	    const isDirect = !!raw.component.editOps?.length;
+	    let delta: TComponentRow | null = isDirect ? raw.component : null;
+	    let baseData: TComponentRenderData = raw;
+
+	    if (isDirect) {
+	      const baseId = raw.component.baseComponentId;
+	      if (baseId == null) return raw;
+	      const baseRow = await this.repo.getRenderData(baseId, tenantId ?? undefined);
+	      if (!baseRow) return raw;
+	      baseData = baseRow;
+	    } else {
+	      delta = await this.repo.findDeltaFor(componentId, tenantId ?? undefined);
+	    }
+
+	    if (!delta || !delta.editOps?.length) return raw;
+
+	    const identitySource = isDirect ? raw.component : baseData.component;
+	    const merged = mergeDelta(
+	      {
+	        identity: { ...identitySource },
+	        config: (baseData.component.config ?? {}) as Record<string, unknown>,
+	        elements: baseData.elements,
+	      },
+	      delta.editOps,
+	    );
+
+	    const component = {
+	      ...identitySource,
+	      ...merged.identity,
+	      id: componentId,
+	      blueprintId: baseData.component.blueprintId,
+	      config: merged.config,
+	      editOps: delta.editOps,
+	      baseComponentId: isDirect ? raw.component.baseComponentId : null,
+	    } as TComponentRow;
+
+	    const elements = merged.elements.map((el) => ({
+	      ...el,
+	      componentId,
+	    })) as TElementRow[];
+
+	    return { component, blueprint: baseData.blueprint, elements };
+	  }
 
   /**
    * Resolve component_ref and renderer elements by fetching their
@@ -208,29 +277,99 @@ export class ComponentsService extends MetadataBaseService<
       ].filter((id) => !visited.has(id));
       if (ids.length === 0) break;
 
-      const refs = await this.repo.findComponentsByIds(ids);
-      const batchData = await this.repo.batchResolveRefs(
-        ids,
-        tenantId ?? undefined,
-      );
-      const refMap = new Map(refs.map((r) => [r.id, r]));
+	      const refs = await this.repo.findComponentsByIds(ids);
+	      const batchData = await this.repo.batchResolveRefs(
+	        ids,
+	        tenantId ?? undefined,
+	      );
+	      const refMap = new Map(refs.map((r) => [r.id, r]));
 
-      for (const el of compRefEls) {
-        const refComp = refMap.get(el.referencedComponentId!);
-        const refData = batchData.get(el.referencedComponentId!);
-        (el as any).referencedComponent = refComp ?? null;
-        (el as any).referencedBlueprint = refData?.blueprint ?? null;
-        (el as any).referencedElements = refData?.elements ?? [];
-      }
+	      // ── Delta-aware refs ──────────────────────────────────
+	      // A referenced component can be customized two ways:
+	      //   1. the row itself is a delta (editOps) — merge vs its base
+	      //   2. a tenant delta row targets the base (baseComponentId = id)
+	      const tenantDeltas = await this.repo.findDeltasFor(
+	        ids,
+	        tenantId ?? undefined,
+	      );
+	      const directBaseIds = [
+	        ...new Set(
+	          compRefEls
+	            .filter(
+	              (e) =>
+	                (refMap.get(e.referencedComponentId!) as TComponentRow | undefined)
+	                  ?.editOps?.length,
+	            )
+	            .map((e) => {
+	              const c = refMap.get(e.referencedComponentId!) as TComponentRow;
+	              return c.baseComponentId;
+	            })
+	            .filter((id): id is number => id != null),
+	        ),
+	      ];
+	      const baseComps =
+	        directBaseIds.length > 0
+	          ? await this.repo.findComponentsByIds(directBaseIds)
+	          : [];
+	      const baseCompMap = new Map(baseComps.map((c) => [c.id, c]));
+	      const baseElementsMap =
+	        directBaseIds.length > 0
+	          ? await this.repo.batchResolveRefs(directBaseIds, tenantId ?? undefined)
+	          : new Map<number, { blueprint: TBlueprintRow; elements: TElementRow[] }>();
 
-      for (const id of ids) visited.add(id);
+	      const next: TElementRow[] = [];
+	      for (const el of compRefEls) {
+	        const refId = el.referencedComponentId!;
+	        const refComp = refMap.get(refId) as TComponentRow | undefined;
+	        const refData = batchData.get(refId);
+	        const isDirect = !!refComp?.editOps?.length;
+	        const delta = isDirect ? refComp : (tenantDeltas.get(refId) ?? null);
 
-      // Next level: all elements of the just-resolved components
-      const next: TElementRow[] = [];
-      for (const refData of batchData.values()) {
-        next.push(...refData.elements);
-      }
-      frontier = next;
+	        let refElements = refData?.elements ?? [];
+	        let refBlueprint = refData?.blueprint ?? null;
+	        let refMerged = refComp as TComponentRow | null | undefined;
+
+	        if (delta?.editOps?.length && refComp) {
+	          const baseId = isDirect ? refComp.baseComponentId : refComp.id;
+	          const baseComp = isDirect
+	            ? (baseId != null ? baseCompMap.get(baseId) : undefined) ?? refComp
+	            : refComp;
+	          const baseEls =
+	            isDirect && baseId != null
+	              ? (baseElementsMap.get(baseId)?.elements ?? refElements)
+	              : refElements;
+	          if (isDirect && baseId != null) {
+	            refBlueprint =
+	              baseElementsMap.get(baseId)?.blueprint ?? refBlueprint;
+	          }
+	          const merged = mergeDelta(
+	            {
+	              identity: { ...refComp },
+	              config: (baseComp.config ?? {}) as Record<string, unknown>,
+	              elements: baseEls,
+	            },
+	            delta.editOps,
+	          );
+	          refElements = merged.elements as TElementRow[];
+	          // The referenced component itself also changes: identity + config
+	          // ops apply to it, so the renderer sees the merged values.
+	          refMerged = {
+	            ...refComp,
+	            ...merged.identity,
+	            config: merged.config,
+	          } as TComponentRow;
+	        }
+
+	        (el as any).referencedComponent = refMerged ?? null;
+	        (el as any).referencedBlueprint = refBlueprint;
+	        (el as any).referencedElements = refElements;
+	        next.push(...refElements);
+	      }
+
+	      for (const id of ids) visited.add(id);
+
+	      // Next level: all elements of the just-resolved components
+	      frontier = next;
     }
 
     // ── Renderer blueprints ───────────────────────────────
@@ -397,56 +536,8 @@ export class ComponentsService extends MetadataBaseService<
         };
       }
 
-      default:
-        return base;
-    }
-  }
-
-  /**
-   * Merge tenant overrides into the rendered component.
-   * Only paths declared in the blueprint's overridable/slot.overridable
-   * are applied — but enforcement happens at write time, so here we
-   * just apply whatever's present.
-   */
-  private applyOverrides(
-    rendered: IRenderedComponent,
-    overrideRows: TComponentRenderData["overrides"],
-    blueprint: TComponentRenderData["blueprint"],
-  ): void {
-    if (!overrideRows || overrideRows.length === 0) return;
-
-    const compOverride = overrideRows.find((o) => !o.elementId);
-    if (compOverride?.overrides) {
-      const ov = compOverride.overrides as Record<string, unknown>;
-      if (typeof ov.displayName === "string") {
-        rendered.displayName = ov.displayName;
-      }
-      if (ov.config) {
-        rendered.config = {
-          ...(rendered.config ?? {}),
-          ...(ov.config as Record<string, unknown>),
-        };
-      }
-    }
-
-    // Element-level overrides
-    const elOverrides = overrideRows.filter((o) => o.elementId);
-    if (elOverrides.length === 0) return;
-
-    const elOvMap = new Map(
-      elOverrides.map((o) => [o.elementId!, o.overrides]),
-    );
-
-    for (const slot of Object.values(rendered.slotsFilled)) {
-      for (const el of slot) {
-        const ov = elOvMap.get(el.id);
-        if (ov) {
-          el.overrides = {
-            ...(el.overrides ?? {}),
-            ...(ov as Record<string, unknown>),
-          };
-        }
-      }
-    }
-  }
+	      default:
+	        return base;
+	    }
+	  }
 }

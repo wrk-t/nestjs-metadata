@@ -11,7 +11,6 @@ import {
   archComponents,
   archComponentBlueprints,
   archComponentElements,
-  archComponentOverrides,
 } from "../schemas";
 
 // ──────────────────────────────────────────────────────────────────
@@ -36,8 +35,6 @@ export type TElementRow = typeof archComponentElements.$inferSelect & {
   referencedComponent?: TComponentRow | null;
   rendererBlueprint?: TBlueprintRow | null;
 };
-
-export type TOverrideRow = typeof archComponentOverrides.$inferSelect;
 
 // ──────────────────────────────────────────────────────────────────
 // Repository
@@ -86,8 +83,7 @@ export class ComponentsPgRepository extends Repository<
 
   /**
    * Fetch everything needed to render a component: the component itself,
-   * its blueprint, its elements (with field defs and UI components), and
-   * any tenant-level overrides.
+   * its blueprint, and its elements (with field defs and UI components).
    */
   async getRenderData(
     componentId: number,
@@ -96,7 +92,6 @@ export class ComponentsPgRepository extends Repository<
     component: TComponentRow;
     blueprint: TBlueprintRow;
     elements: TElementRow[];
-    overrides: TOverrideRow[];
   } | null> {
     return await this.execute(async (db) => {
       const component = await db.query.archComponents.findFirst({
@@ -174,29 +169,69 @@ export class ComponentsPgRepository extends Repository<
         }
       }
 
-      // Overrides
-      let overrides: TOverrideRow[] = [];
-      if (tenantId) {
-        overrides = await db
-          .select()
-          .from(archComponentOverrides)
-          .where(
-            and(
-              eq(archComponentOverrides.componentId, componentId),
-              eq(archComponentOverrides.tenantId, tenantId),
-            ),
-          );
-      }
+      // Delta rows (baseComponentId + editOps) are resolved at the
+      // service layer — no materialized fork rows to load here.
 
-      return { component, blueprint, elements, overrides };
+      return { component, blueprint, elements };
     }, "read");
   }
 
-  // ── Blueprint helpers ──────────────────────────────────────────
+	  // ── Blueprint helpers ──────────────────────────────────────────
 
-  /**
-   * Fetch a single blueprint by ID.
-   */
+	  /**
+	   * The tenant's delta row targeting a base component (if any).
+	   * Deltas are tenant-scoped customizations: one row per (base, tenant).
+	   */
+	  async findDeltaFor(
+	    baseComponentId: number,
+	    tenantId: string | null | undefined,
+	  ): Promise<TComponentRow | null> {
+	    if (!tenantId) return null;
+	    return await this.execute(async (db) => {
+	      const rows = await db
+	        .select()
+	        .from(archComponents)
+	        .where(
+	          and(
+	            eq(archComponents.baseComponentId, baseComponentId),
+	            eq(archComponents.tenantId, tenantId),
+	          ),
+	        )
+	        .limit(1);
+	      return rows[0] ?? null;
+	    }, "read");
+	  }
+
+	  /**
+	   * Batch variant for ref-walking: base component ids → their tenant
+	   * delta rows (only for bases that have one).
+	   */
+	  async findDeltasFor(
+	    baseComponentIds: number[],
+	    tenantId: string | null | undefined,
+	  ): Promise<Map<number, TComponentRow>> {
+	    const out = new Map<number, TComponentRow>();
+	    if (!tenantId || baseComponentIds.length === 0) return out;
+	    await this.execute(async (db) => {
+	      const rows = await db
+	        .select()
+	        .from(archComponents)
+	        .where(
+	          and(
+	            inArray(archComponents.baseComponentId, baseComponentIds),
+	            eq(archComponents.tenantId, tenantId),
+	          ),
+	        );
+	      for (const r of rows) {
+	        if (r.baseComponentId != null) out.set(r.baseComponentId, r);
+	      }
+	    }, "read");
+	    return out;
+	  }
+
+	  /**
+	   * Fetch a single blueprint by ID.
+	   */
   async findBlueprintById(id: number): Promise<TBlueprintRow | null> {
     return await this.execute(async (db) => {
       return (

@@ -18,13 +18,12 @@ import {
   type TenantRequirement,
 } from "../common/tenant-requirement";
 import { TRANSLATION_SERVICE } from "../metadata.types";
-import { modules, screenContexts, screens, screenWidgets } from "../schemas";
-import type { IWidgetParamBinding } from "../modules/screen-widgets/types";
+import { modules, screenContexts, screens } from "../schemas";
 import { ScreensPgRepository } from "../repositories/screens.pg.repository";
 import { ScreenContextsPgRepository } from "../repositories/screen-contexts.pg.repository";
-import { ScreenWidgetsPgRepository } from "../repositories/screen-widgets.pg.repository";
 import { ModulesPgRepository } from "../repositories/modules.pg.repository";
 import { ComponentsPgRepository } from "../repositories/components.pg.repository";
+import { CapabilityService } from "./capability.service";
 
 @Injectable()
 export class ScreensService extends MetadataBaseService<
@@ -41,13 +40,12 @@ export class ScreensService extends MetadataBaseService<
     @Optional()
     @Inject(TRANSLATION_SERVICE)
     readonly translationService?: ITranslationService,
-    @Optional()
-    private readonly screenContextsRepo?: ScreenContextsPgRepository,
-    @Optional()
-    private readonly screenWidgetsRepo?: ScreenWidgetsPgRepository,
-    @Optional() private readonly modulesRepo?: ModulesPgRepository,
-    @Optional() private readonly componentsRepo?: ComponentsPgRepository,
-    @Optional() private readonly cls?: ClsService,
+	    @Optional()
+	    private readonly screenContextsRepo?: ScreenContextsPgRepository,
+	    @Optional() private readonly modulesRepo?: ModulesPgRepository,
+	    @Optional() private readonly componentsRepo?: ComponentsPgRepository,
+	    @Optional() private readonly capability?: CapabilityService,
+	    @Optional() private readonly cls?: ClsService,
   ) {
     super(repo, requestContext, translationService);
   }
@@ -123,42 +121,50 @@ export class ScreensService extends MetadataBaseService<
   		const scopeMap = this.resolveScopeMap();
   		const hasScopeMap = Object.keys(scopeMap).length > 0;
 
-  		result.data = result.data.filter((s: any) => {
+  		const kept: any[] = [];
+  		for (const s of result.data) {
   			// Tenant-membership visibility (own requirement + module's)
   			// Super admins bypass the tenant requirement entirely.
   			if (
   				!isSuperAdmin &&
   				!satisfiesTenantRequirement(s.tenantRequirement, tenantId)
   			) {
-  				return false;
+  				continue;
   			}
   			if (
   				!isSuperAdmin &&
   				!satisfiesTenantRequirement(moduleReqs.get(s.moduleId), tenantId)
   			) {
-  				return false;
+  				continue;
   			}
 
-      			// Permission-based visibility
-      			if (hasScopeMap) {
-      				const visPerms = s.visibleToPermissions as Array<{
-      					resource: string;
-      					action: string;
-      					scope?: "own" | "tenant" | "all";
-      				}> | null;
-      				if (visPerms?.length) {
-      					const allowed = visPerms.every((req) =>
-      						this.scopeSatisfies(scopeMap[req.resource] ?? [], req.scope),
-      					);
-      					if (!allowed) return false;
-      				}
-      			}
+  			// Permission-based visibility
+  			if (hasScopeMap) {
+  				const visPerms = s.visibleToPermissions as Array<{
+  					resource: string;
+  					action: string;
+  					scope?: "own" | "tenant" | "all";
+  				}> | null;
+  				if (visPerms?.length) {
+  					const allowed = visPerms.every((req) =>
+  						this.scopeSatisfies(scopeMap[req.resource] ?? [], req.scope),
+  					);
+  					if (!allowed) continue;
+  				}
+  			}
 
-      			return true;
-      		});
+  			// Tier + feature gating (features resolve per tenant; super admin
+  			// bypasses)
+  			if (this.capability && !(await this.capability.canAccess(s))) {
+  				continue;
+  			}
 
-      		return result;
-      	}
+  			kept.push(s);
+  		}
+  		result.data = kept;
+
+  		return result;
+  	}
 
       	/**
       	 * True when the user's scopes satisfy a required visibility scope.
@@ -255,66 +261,30 @@ export class ScreensService extends MetadataBaseService<
         )
       : null;
 
-    // 3. Load widgets ordered by displayOrder
-    const widgets = this.screenWidgetsRepo
-      ? await this.screenWidgetsRepo.selectMany(
-          eq(screenWidgets.screenId, screenId) as SQL,
-        )
-      : [];
-
-    // 4. Resolve widget params
-    const resolvedWidgets = await Promise.all(
-      (Array.isArray(widgets) ? widgets : []).map(async (widget: any) => {
-        const resolvedParams: Record<string, unknown> = {};
-        const bindings = widget.paramBindings as Record<
-          string,
-          IWidgetParamBinding
-        > | null;
-        if (bindings) {
-          for (const [paramName, binding] of Object.entries(bindings)) {
-            resolvedParams[paramName] = this.resolveBinding(
-              binding,
-              context,
-              widget,
-            );
-          }
-        }
-
-        return {
-          ...widget,
-          resolvedParams,
-        };
-      }),
-    );
+    // 3. Load the root component the screen mounts — screens now point at
+    // a component directly (screen_widgets is gone).
+    const root = screen.componentId
+      ? await this.componentsRepo?.selectOneById(screen.componentId)
+      : null;
 
     return {
       screen,
       context: context ? { params: context.params } : null,
-      widgets: resolvedWidgets,
+      root: root ?? null,
     };
   }
 
 	/**
-	 * Components used on a screen — the screen's widget components plus,
-	 * recursively, every component they reference via component_ref elements
-	 * (page → tabs → tables/forms → sections …). Deduplicated, ordered
-	 * breadth-first (widget components first).
+	 * Components used on a screen — the screen's root component plus,
+	 * recursively, every component it references via component_ref elements
+	 * (layout → grid → tables/forms → sections …). Deduplicated, ordered
+	 * breadth-first (root component first).
 	 */
 	async findScreenComponents(screenId: number) {
-		const widgets = this.screenWidgetsRepo
-			? await this.screenWidgetsRepo.selectMany(
-					eq(screenWidgets.screenId, screenId) as SQL,
-				)
-			: [];
-		if (!this.componentsRepo) return [];
+		const screen = await this.repo.selectOneById(screenId);
+		if (!screen || !this.componentsRepo) return [];
 
-		const seedIds = [
-			...new Set(
-				(Array.isArray(widgets) ? widgets : [])
-					.map((w: any) => w.resourceId)
-					.filter(Boolean),
-			),
-		] as number[];
+		const seedIds = screen.componentId ? [screen.componentId] : [];
 		if (seedIds.length === 0) return [];
 
 		// BFS over component_ref elements (visited set guards against cycles)
@@ -375,9 +345,9 @@ export class ScreensService extends MetadataBaseService<
 	}
 
 	/**
-	 * Component tree of a screen — the screen's widget components plus,
-	 * recursively, every component they reference via component_ref elements
-	 * (page → tabs → tables/forms → sections …).
+	 * Component tree of a screen — the screen's root component plus,
+	 * recursively, every component it references via component_ref elements
+	 * (layout → grid → tables/forms → sections …).
 	 *
 	 * Unlike findScreenComponents (flat BFS list), this returns a nested tree
 	 * that preserves slots, grid positions (row/col/colSpan), field definitions
@@ -397,18 +367,7 @@ export class ScreensService extends MetadataBaseService<
 			return { screen: screenInfo, roots: [] };
 		}
 
-		const widgets = this.screenWidgetsRepo
-			? await this.screenWidgetsRepo.selectMany(
-					eq(screenWidgets.screenId, screenId) as SQL,
-				)
-			: [];
-		const seedIds = [
-			...new Set(
-				(Array.isArray(widgets) ? widgets : [])
-					.map((w: any) => w.resourceId)
-					.filter(Boolean),
-			),
-		] as number[];
+		const seedIds = screen.componentId ? [screen.componentId] : [];
 		if (seedIds.length === 0) {
 			return { screen: screenInfo, roots: [] };
 		}
@@ -513,28 +472,4 @@ export class ScreensService extends MetadataBaseService<
 		}
 		return payload;
 	}
-
-	  private resolveBinding(
-    binding: IWidgetParamBinding,
-    context: Record<string, unknown> | null,
-    _widget: Record<string, unknown>,
-  ): unknown {
-    switch (binding.source) {
-      case "literal":
-        return binding.value ?? null;
-      case "scope":
-        return this.requestContext?.getTenantId() ?? null;
-      case "screen":
-        if (context && binding.value) {
-          const ctxParams = (context.params as Array<{ name: string }>) ?? [];
-          const match = ctxParams.find(
-            (p: { name: string }) => p.name === binding.value,
-          );
-          return match ? `{{screen.${binding.value}}}` : null;
-        }
-        return null;
-      default:
-        return null;
-    }
-  }
 }

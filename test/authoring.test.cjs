@@ -25,12 +25,14 @@ const {
 	Link,
 	Badge,
 	ActionButton,
+	Layout,
+	Screen,
+	Typography,
 	DEFAULT_BLUEPRINTS,
 } = require("../dist/authoring/index.js");
 
 // Blueprint id map — ids are app-owned; any numbers work for the tests.
 registerBlueprintIds({
-	screenLayoutGeneral: 1,
 	page: 2,
 	form: 3,
 	info: 5,
@@ -87,7 +89,7 @@ test("blueprint catalog is complete and consistent", () => {
 	const keys = DEFAULT_BLUEPRINTS.map((bp) => bp.key);
 	const expected = [
 		"table", "form", "page", "fieldRenderer", "badge",
-		"chartCell", "screenLayoutGeneral", "actionButton", "info", "tabs",
+		"chartCell", "actionButton", "info", "tabs",
 		"swaggerEditor", "testTab", "perMethodPricing", "layout", "button",
 		"link", "avatar", "logoUploader", "rawJson", "auditHistory",
 		"dateRangePicker", "barChart", "pieChart", "lineChart", "metric",
@@ -103,7 +105,7 @@ test("blueprint catalog is complete and consistent", () => {
 test("createBlueprintRows stamps the catalog with app ids", () => {
 	const rows = createBlueprintRows({
 		table: 1, form: 2, page: 4, fieldRenderer: 5, badge: 6,
-		chartCell: 7, screenLayoutGeneral: 8, actionButton: 9, info: 10, tabs: 11,
+		chartCell: 7, actionButton: 9, info: 10, tabs: 11,
 		swaggerEditor: 12, testTab: 13, perMethodPricing: 14, layout: 15,
 		button: 16, link: 17, avatar: 18, logoUploader: 19, rawJson: 20,
 		auditHistory: 21, dateRangePicker: 22, barChart: 23, pieChart: 24,
@@ -218,22 +220,30 @@ test("Form actions are nodes: stripped from config, emitted into the actions slo
 	const seed = new SeedContext();
 	const submit = new Button({
 		id: 30, label: "$trl_sign_in", action: "submit",
-		endpoint: "/api/v1/auth/login", method: "POST",
 	});
 	const link = new Link({ id: 31, label: "$trl_create_account", path: "/auth/register" });
 	new Form(
-		{ id: 10, name: "login", displayName: "$trl_login", settings: { validateOnChange: true }, actions: [submit, link] },
+		{
+			id: 10, name: "login", displayName: "$trl_login",
+			settings: { validateOnChange: true },
+			submit: { endpoint: "/api/v1/auth/login", method: "POST", context: "create" },
+			actions: [submit, link],
+		},
 		[],
 	);
 	const b = seed.collect();
 
 	const comp = byId(b.COMPONENTS).get(10);
-	assert.deepEqual(comp.config, { settings: { validateOnChange: true } });
+	// submit config lives on the form; the submit button carries only its action
+	assert.deepEqual(comp.config, {
+		settings: { validateOnChange: true },
+		submit: { endpoint: "/api/v1/auth/login", method: "POST", context: "create" },
+	});
 
 	assert.equal(b.COMPONENTS.length, 3);
 	const submitRow = byId(b.COMPONENTS).get(30);
 	assert.equal(submitRow.blueprintId, 29); // button
-	assert.equal(submitRow.config.endpoint, "/api/v1/auth/login");
+	assert.equal(submitRow.config.endpoint, undefined);
 	const linkRow = byId(b.COMPONENTS).get(31);
 	assert.equal(linkRow.blueprintId, 30); // link
 
@@ -371,29 +381,93 @@ test("config.displayOrder overrides slot index", () => {
 	assert.equal(edge.referencedComponentId, 61);
 });
 
-// ── Thin wrappers (module/screens/widgets) ────────────────────────
+// ── Thin wrappers (module/screens) ─────────────────────────────────
 
-test("SeedContext module/screens/widgets are normalized", () => {
+test("SeedContext modules/screens are normalized", () => {
 	const seed = new SeedContext();
 	new Form({ id: 10 });
-	seed.module = { id: 1, name: "auth", displayName: "$trl_auth", icon: "Lock", displayOrder: 1 };
+	seed.addModule({ id: 1, name: "auth", displayName: "$trl_auth", icon: "Lock", displayOrder: 1 });
 	seed.screens = [{ id: 1, moduleId: 1, name: "auth_login", displayName: "$trl_login", displayOrder: 1 }];
-	seed.widgets = [{ id: 1, screenId: 1, widgetType: "page", resourceId: 10, displayOrder: 1 }];
 	const b = seed.collect();
-	assert.equal(b.MODULE.id, 1);
-	assert.equal(b.MODULE.isActive, true);
+	assert.equal(b.MODULES[0].id, 1);
+	assert.equal(b.MODULES[0].isActive, true);
 	assert.equal(b.SCREENS[0].pathPattern, null);
-	assert.deepEqual(b.SCREEN_WIDGETS[0].config, {});
-	assert.equal(b.SCREEN_WIDGETS[0].widgetType, "page");
 });
 
-test("SeedContext without extras leaves MODULE undefined", () => {
+test("SeedContext without extras leaves MODULES empty", () => {
 	const seed = new SeedContext();
 	new Form({ id: 10 });
 	const b = seed.collect();
-	assert.equal(b.MODULE, undefined);
+	assert.deepEqual(b.MODULES, []);
 	assert.deepEqual(b.SCREENS, []);
-	assert.deepEqual(b.SCREEN_WIDGETS, []);
+});
+
+test("a subtree constructed outside a context registers when its parent is ensured", () => {
+	// Simulates the React-like seed layout: shared nodes are constructed in
+	// their own files (no active context), then wired in the index.
+	const email = new EmailField({ id: 100, name: "email", label: "Email", isRequired: true });
+	const submit = new Button({ id: 101, name: "submit", label: "Sign in", action: "submit" });
+	const form = new Form(
+		{ id: 10, name: "auth_login", displayName: "$trl_login", actions: [submit] },
+		[new Stack({ id: 11, name: "stack" }, [new Typography({ id: 12, name: "title", text: "Hi" }), email])],
+	);
+
+	// No context was active during construction — nothing registered yet.
+	assert.equal(SeedContext.current, null);
+
+	const seed = new SeedContext();
+	seed.ensureNode(form);
+	const b = seed.collect();
+
+	assert.equal(b.COMPONENTS.length, 4); // form + stack + title + button
+	assert.equal(b.FIELD_DEFINITIONS.length, 1);
+	assert.equal(b.FIELD_DEFINITIONS[0].id, 100);
+	// Edges: form→stack, form→submit (actions), stack→title, stack→email
+	assert.equal(b.ELEMENTS.length, 4);
+	assert.ok(b.ELEMENTS.every((e) => e.displayOrder >= 1));
+});
+
+test("ensureNode on the same shared instance twice stays idempotent", () => {
+	const email = new EmailField({ id: 100, name: "email", label: "Email" });
+	const a = new Form({ id: 10 }, [email]);
+	const b = new Form({ id: 20 }, [email]);
+
+	const seed = new SeedContext();
+	seed.ensureNode(a);
+	seed.ensureNode(b);
+	const bundle = seed.collect();
+
+	assert.equal(bundle.COMPONENTS.length, 2); // both forms
+	assert.equal(bundle.FIELD_DEFINITIONS.length, 1); // shared field once
+	assert.equal(bundle.ELEMENTS.length, 2); // one edge per parent
+});
+
+test("Screen mounts its root component via componentId", () => {
+	const seed = new SeedContext();
+	const root = new Layout({
+		id: 50,
+		name: "wallet_page",
+		displayName: "$trl_wallet",
+	});
+	seed.addScreen(
+		new Screen(
+			{
+				id: 1,
+				moduleId: 1,
+				name: "wallet",
+				displayName: "$trl_wallet",
+				displayOrder: 1,
+			},
+			root,
+		),
+	);
+	const b = seed.collect();
+	assert.equal(b.COMPONENTS.length, 1);
+	assert.equal(b.COMPONENTS[0].id, 50);
+	assert.equal(b.SCREENS.length, 1);
+	assert.equal(b.SCREENS[0].componentId, 50);
+	assert.equal(b.SCREENS[0].displayOrder, 1);
+	assert.equal(b.SCREENS[0].pathPattern, null);
 });
 
 test("separate SeedContexts keep rows separate; element ids stay global", () => {

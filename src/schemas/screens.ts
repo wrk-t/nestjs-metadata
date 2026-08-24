@@ -3,6 +3,7 @@ import { boolean, integer, json, pgTable, varchar } from "drizzle-orm/pg-core";
 import { ids } from "../helpers/ids";
 import { timestamps } from "../helpers/timestamps";
 import { modules } from "./modules";
+import { archComponents } from "./arch/components";
 import type { TenantRequirement } from "../common/tenant-requirement";
 
 /**
@@ -53,6 +54,15 @@ export const screens = pgTable("screens", {
   // ── Order ──────────────────────────────────────────────────
   displayOrder: integer("display_order").default(0).notNull(),
 
+	  // ── Root component ────────────────────────────────────────────
+	  // The component instance this screen renders (replaces the old
+	  // screen_widgets indirection). Everything on a screen is a component;
+	  // the screen simply points at its root — usually a Layout/Grid tree.
+	  componentId: integer("component_id").references(
+	  	() => archComponents.id,
+	  	{ onDelete: "set null" },
+	  ),
+
   // ── Path pattern ────────────────────────────────────────────
   // URL template for this screen. Static screens use a simple
   // name (e.g. "tables"), detail screens use parameterized
@@ -69,16 +79,22 @@ export const screens = pgTable("screens", {
     }>
   >(),
 
-  // ── Tenant-membership visibility ──────────────────────────
-  // Controls whether the screen is returned based on the user's
-  // tenant membership: "any" (default), "tenant" (user must belong
-  // to a tenant), or "standalone" (user must have no tenant).
-  // Screens are also hidden when their module's requirement is
-  // stricter than the user's mode.
-  tenantRequirement: varchar("tenant_requirement", { length: 20 })
-    .$type<TenantRequirement>()
-    .default("any")
-    .notNull(),
+	  // ── Tenant-membership visibility ──────────────────────────
+	  // Controls whether the screen is returned based on the user's
+	  // tenant membership: "any" (default), "tenant" (user must belong
+	  // to a tenant), or "standalone" (user must have no tenant).
+	  // Screens are also hidden when their module's requirement is
+	  // stricter than the user's mode.
+	  tenantRequirement: varchar("tenant_requirement", { length: 20 })
+	    .$type<TenantRequirement>()
+	    .default("any")
+	    .notNull(),
+
+	  // ── Tier / feature gating ─────────────────────────────────
+	  // Minimum tier required to see this screen ("solo" | "team" | "enterprise").
+	  requiredTier: varchar("required_tier", { length: 20 }),
+	  // Feature flag (features.name) that must be enabled for the tenant.
+	  requiresFeature: varchar("requires_feature", { length: 100 }),
 
   // ── Status ─────────────────────────────────────────────────
   isActive: boolean("is_active").default(true).notNull(),
@@ -95,5 +111,9 @@ export const screensRelations = relations(screens, ({ one }) => ({
   parentScreen: one(screens, {
     fields: [screens.parentScreenId],
     references: [screens.id],
+  }),
+  rootComponent: one(archComponents, {
+    fields: [screens.componentId],
+    references: [archComponents.id],
   }),
 }));

@@ -36,25 +36,47 @@ export interface IColumnConfig {
  * emitted as element overrides; `uiComponentId` is hoisted onto the
  * element row's column.
  */
-export interface IFieldConfig extends IComponentIdentity {
-	/** Alias for displayName (React-style). */
-	label?: string;
-	placeholder?: string;
-	isRequired?: boolean;
-	isReadOnly?: boolean;
-	isHidden?: boolean;
-	validations?: FieldValidations;
-	/** Options source for select/reference fields — emitted as element overrides. */
-	datasource?: FieldDatasource;
-	colSpan?: number;
-	columnConfig?: IColumnConfig;
-	uiComponentId?: number;
-}
+	export interface IFieldConfig extends IComponentIdentity {
+		/** Alias for displayName (React-style). */
+		label?: string;
+		placeholder?: string;
+		isRequired?: boolean;
+		isReadOnly?: boolean;
+		isHidden?: boolean;
+		/** Make the field read-only in specific dialog contexts (e.g. edit). */
+		readOnlyWhen?: { context?: string[] };
+		validations?: FieldValidations;
+		/** Options source for select/reference fields — emitted as element overrides. */
+		datasource?: FieldDatasource;
+		colSpan?: number;
+		columnConfig?: IColumnConfig;
+		/**
+		 * Element-level column accessor — the element's `name`, overriding the
+		 * field-def name when they differ (e.g. a tenant column whose accessor
+		 * is "tenant.displayName" while the field-def is named "tenantName").
+		 */
+		columnName?: string;
+		uiComponentId?: number;
+	}
 
 // ──────────────────────────────────────────────────────────────────
 // Per-blueprint configs — the typed replacement for the untyped
 // `archComponents.config` json column.
 // ──────────────────────────────────────────────────────────────────
+
+export interface IFormSubmitConfig {
+	/** The endpoint the form submits to (supports {id} substitution). */
+	endpoint: string;
+	method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+	/** create | edit — drives record fetch + payload shape. */
+	context?: "create" | "edit";
+	successMessage?: string;
+	successRedirect?: string;
+	/** Resolve the payload from a state context instead of the form values. */
+	stateContext?: string;
+	/** Rename payload keys before sending (e.g. tenantId → ownerTenantId). */
+	fieldMap?: Record<string, string>;
+}
 
 export interface IFormConfig extends IComponentIdentity {
 	settings?: {
@@ -62,6 +84,11 @@ export interface IFormConfig extends IComponentIdentity {
 		validateOnChange?: boolean;
 		confirmOnLeave?: boolean;
 	};
+	/**
+	 * Submission config — lives on the FORM, not on the submit button.
+	 * A submit button is just a Button with action: "submit".
+	 */
+	submit?: IFormSubmitConfig;
 	/** Footer children (Button/Link components) — emitted into the "actions" slot. */
 	actions?: AuthoringChild[];
 }
@@ -237,7 +264,8 @@ export interface IButtonConfig extends IComponentIdentity {
 		| "navigate";
 	variant?: "contained" | "outlined" | "text";
 	color?: string;
-	/** submit / apiCall: the request payload. */
+	/** submit / apiCall: the request payload. (For submit buttons this lives
+	 *  on the FORM — IFormConfig.submit; the button only declares the action.) */
 	endpoint?: string;
 	method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 	context?: string;

@@ -49,13 +49,19 @@ export const fieldDefinitions = pgTable("field_definitions", {
          * label/value and which columns to search (e.g. a users picker:
          * displayField "email", valueField "id", searchFields ["email"]).
          */
-        entityMeta?: {
-          displayField: string;
-          valueField: string;
-          searchFields: string[];
-          filter?: { field: string; value: unknown };
-          orderBy?: { field: string; direction: "asc" | "desc" };
-        };
+        		entityMeta?: {
+        			displayField: string;
+        			valueField: string;
+        			searchFields: string[];
+        			filter?: { field: string; value: unknown };
+        			orderBy?: { field: string; direction: "asc" | "desc" };
+        			/**
+        			 * Option label template — "{field}" tokens replaced from the row
+        			 * (e.g. "{displayName}  {id}" to disambiguate tenants by id).
+        			 * Falls back to displayField when omitted.
+        			 */
+        			labelTemplate?: string;
+        		};
       }
     | {
         type: "function";

@@ -51,9 +51,15 @@ export const modules = pgTable("modules", {
   displayOrder: integer("display_order").default(0).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
 
-  // ── Visibility ─────────────────────────────────────────────
-  // When true, only users with isSuperAdmin can see this module.
-  visibleToSuperAdmin: boolean("visible_to_super_admin").default(false).notNull(),
+	  // ── Visibility ─────────────────────────────────────────────
+	  // When true, only users with isSuperAdmin can see this module.
+	  visibleToSuperAdmin: boolean("visible_to_super_admin").default(false).notNull(),
+
+	  // ── Tier / feature gating ─────────────────────────────────
+	  // Minimum tier required to see this module ("solo" | "team" | "enterprise").
+	  requiredTier: varchar("required_tier", { length: 20 }),
+	  // Feature flag (features.name) that must be enabled for the tenant.
+	  requiresFeature: varchar("requires_feature", { length: 100 }),
 
   // ── Tenant-membership visibility ──────────────────────────
   // Controls whether the module is returned based on the user's

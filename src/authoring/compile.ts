@@ -4,41 +4,41 @@ import type {
 	fieldDefinitions as fdSchema,
 	modules as mSchema,
 	screens as scSchema,
-	screenWidgets as swSchema,
 } from "../schemas";
 import type { FieldDefRow } from "./config-types";
+import type { Screen } from "./nodes";
 
 // ──────────────────────────────────────────────────────────────────
-// SeedContext — the per-file seed accumulator.
+// SeedContext — the shared seed accumulator.
 //
-// Seeding is embedded in the node classes: constructing a node
-// registers its rows into the ACTIVE context (see SeedContext.current).
-// A seed file therefore needs no defineSeed ceremony:
+// ONE context per metadata seed suite (see back/…/seeds/metadata/index.ts):
+// constructing a node inside a context registers its rows + edges; nodes
+// constructed at import time (shared components/fields in their own files)
+// are registered recursively when a parent or screen references them
+// (`ensureIn`), or explicitly via `ensureNode` (components mounted only by
+// id, e.g. dialog forms targeted from toolbarActions).
 //
 //   const seed = new SeedContext();          // becomes active
-//   const form = new Form({ id: 1 }, [...]); // registers rows + edges
-//   seed.module = { ... }; seed.screens = [...]; seed.widgets = [...];
+//   seed.ensureNode(loginForm);              // registers the whole subtree
+//   seed.addModule({ ... });                 // module rows
+//   seed.addScreen(new Screen({...}, root)); // screen rows
 //   export const { COMPONENTS, ELEMENTS, ... } = seed.collect();
 //
-// Rows are deduped by id — the same instance reused in multiple parents
-// emits its own rows once, with one edge per parent. Element edge ids
-// are minted from a process-global counter so aggregated bundles
-// (login + register + …) never mint colliding ids.
+// Rows are deduped by id; element edge ids are minted from a
+// process-global counter so aggregated bundles never mint colliding ids.
 // ──────────────────────────────────────────────────────────────────
 
 type CompRow = typeof compSchema.$inferInsert;
 type ElRow = typeof elSchema.$inferInsert;
 type ModuleRow = typeof mSchema.$inferInsert;
 type ScreenRow = typeof scSchema.$inferInsert;
-type WidgetRow = typeof swSchema.$inferInsert;
 
 export interface SeedBundle {
 	FIELD_DEFINITIONS: FieldDefRow[];
 	COMPONENTS: CompRow[];
 	ELEMENTS: ElRow[];
-	MODULE?: ModuleRow;
+	MODULES: ModuleRow[];
 	SCREENS: ScreenRow[];
-	SCREEN_WIDGETS: WidgetRow[];
 }
 
 // Global element-id sequence — shared by every SeedContext in the process
@@ -58,15 +58,15 @@ export class SeedContext {
 	readonly components: CompRow[] = [];
 	readonly elements: ElRow[] = [];
 
-	/** Module row (optional — upserted by id). */
-	module?: ModuleRow;
+	/** Module rows. */
+	modules: ModuleRow[] = [];
 	/** Screen rows. */
 	screens: ScreenRow[] = [];
-	/** Widget rows. */
-	widgets: WidgetRow[] = [];
 
 	private readonly seenFields = new Set<number>();
 	private readonly seenComponents = new Set<number>();
+	private readonly seenModules = new Set<number>();
+	private readonly ensured = new Set<number>();
 
 	constructor() {
 		// Last-created context wins — seed files construct synchronously at
@@ -94,6 +94,39 @@ export class SeedContext {
 		this.components.push(row);
 	}
 
+	/** Register a module row — idempotent by id. */
+	addModule(row: ModuleRow): void {
+		if (row.id == null || this.seenModules.has(row.id)) return;
+		this.seenModules.add(row.id);
+		this.modules.push(row);
+	}
+
+	/** Whether a component's subtree has been ensured in this context. */
+	hasEnsured(id: number): boolean {
+		return this.ensured.has(id);
+	}
+
+	/** Mark a component's subtree as ensured in this context. */
+	markEnsured(id: number): void {
+		this.ensured.add(id);
+	}
+
+	/**
+	 * Register a standalone node into this context — used for components
+	 * mounted only by id (dialog forms targeted from toolbarActions) or
+	 * shared fields that no parent mounts as a child.
+	 */
+	ensureNode(node: unknown): void {
+		const n = node as {
+			ensureIn?: (ctx: SeedContext) => void;
+			fieldDefRow?: () => FieldDefRow;
+		};
+		if (typeof n?.ensureIn === "function") n.ensureIn(this);
+		else if (typeof n?.fieldDefRow === "function") {
+			this.addFieldDefinition(n.fieldDefRow());
+		}
+	}
+
 	/**
 	 * Pin a registered row's displayOrder to its slot position. The first
 	 * parent wins; explicit `config.displayOrder` is never overwritten
@@ -106,6 +139,32 @@ export class SeedContext {
 
 	addElement(row: ElRow): void {
 		this.elements.push(row);
+	}
+
+	/**
+	 * Register a screen row + its root component. The root node (or bare
+	 * component id) is re-ensured idempotently, and the screen mounts it
+	 * via `componentId`.
+	 */
+	addScreen(screen: Screen): void {
+		const root = screen.root;
+		if (typeof root !== "number") root.ensureIn(this);
+		const rootId = typeof root === "number" ? root : root.id;
+		this.screens.push({
+			id: screen.config.id,
+			moduleId: screen.config.moduleId,
+			name: screen.config.name ?? String(screen.config.id),
+			displayName: screen.config.displayName ?? "",
+			icon: screen.config.icon ?? null,
+			pathPattern: screen.config.pathPattern ?? null,
+			visibleToPermissions: screen.config.visibleToPermissions ?? null,
+			displayOrder: screen.config.displayOrder ?? 0,
+			requiredTier: screen.config.requiredTier ?? null,
+			requiresFeature: screen.config.requiresFeature ?? null,
+			meta: screen.config.meta ?? null,
+			componentId: rootId,
+			isActive: true,
+		});
 	}
 
 	nextElementId(): number {
@@ -126,9 +185,8 @@ export class SeedContext {
 			FIELD_DEFINITIONS: this.fieldDefinitions,
 			COMPONENTS: this.components,
 			ELEMENTS: this.elements,
-			MODULE: this.module ? normalizeModule(this.module) : undefined,
+			MODULES: this.modules.map(normalizeModule),
 			SCREENS: this.screens.map(normalizeScreen),
-			SCREEN_WIDGETS: this.widgets.map(normalizeWidget),
 		};
 	}
 }
@@ -154,15 +212,4 @@ function normalizeScreen(screen: ScreenRow): ScreenRow {
 		pathPattern: null,
 		...screen,
 	} as ScreenRow;
-}
-
-function normalizeWidget(widget: WidgetRow): WidgetRow {
-	return {
-		config: {},
-		tenantId: null,
-		overridesWidgetId: null,
-		isActive: true,
-		meta: null,
-		...widget,
-	} as WidgetRow;
 }

@@ -13,8 +13,6 @@ export {
   archComponentsRelations,
   archComponentElements,
   archComponentElementsRelations,
-  archComponentOverrides,
-  archComponentOverridesRelations,
 } from "./arch";
 export type {
   IBlueprintSlot,
@@ -23,6 +21,8 @@ export type {
   IPermissionVisibility,
   IElementParamBinding,
   IElementGrid,
+  IEditOp,
+  TEditOperation,
 } from "./arch";
 
 // ── Shared primitives ───────────────────────────────────────
@@ -40,5 +40,3 @@ export { modules, modulesRelations } from "./modules";
 export { screens, screensRelations } from "./screens";
 export { screenContexts, screenContextsRelations } from "./screenContexts";
 export type { IScreenContextParam } from "./screenContexts";
-export { screenWidgets, screenWidgetsRelations } from "./screenWidgets";
-export type { IWidgetParamBinding } from "./screenWidgets";

@@ -4,7 +4,6 @@ import { ids } from "../../helpers/ids";
 import { timestamps } from "../../helpers/timestamps";
 import { archComponentBlueprints } from "./componentBlueprints";
 import { archComponentElements } from "./componentElements";
-import { archComponentOverrides } from "./componentOverrides";
 
 // ──────────────────────────────────────────────────────────────────
 // Permission visibility entry
@@ -14,6 +13,47 @@ export interface IPermissionVisibility {
   resource: string;
   action: string;
   scope?: "own" | "tenant" | "all";
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Edit op — one builder edit, the delta on a customized component.
+//
+// A delta row is a component whose tree is the base component's tree
+// with these ops applied on top (deep-merge semantics: the user's op
+// wins on exactly the paths it touches; everything else flows from the
+// current base). The merge runs at read time (service layer) — no
+// materialized fork rows. Deltas are always tenant-scoped (tenantId
+// set) and always target a BASE component (baseComponentId set); a
+// delta never targets another delta.
+// ──────────────────────────────────────────────────────────────────
+
+export type TEditOperation =
+  | "merge"
+  | "replace"
+  | "append"
+  | "prepend"
+  | "remove"
+  | "insert";
+
+export interface IEditOp {
+  /** Stable op id (undo/redo targeting). */
+  id: string;
+	  /** Which part of the component tree this op targets. */
+	  selector:
+	    | { kind: "config"; path: string } // dot-path into config
+	    | { kind: "identity"; path: string } // component column: displayName/description/icon/…
+	    | { kind: "slot"; slotName: string } // a whole slot (children list)
+	    | { kind: "element"; elementId: number }; // a specific child element
+  operation: TEditOperation;
+  value?: unknown;
+  /** For append/insert: the created node, carrying its own id. */
+  node?: {
+    /** Explicit id for the created element — stable across re-merges. */
+    id: number;
+    [key: string]: unknown;
+  };
+  /** For array ops: match existing children by id instead of position. */
+  matchBy?: "id" | "type";
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -29,6 +69,9 @@ export interface IPermissionVisibility {
 //   - contains children via arch_component_elements
 //   - can be referenced as a child by other components via
 //     elementType: "component_ref" in arch_component_elements
+//
+// Customization is a delta row: baseComponentId + editOps (tenant-scoped).
+// The merged tree is computed at read time; base rows have no editOps.
 
 export const archComponents = pgTable("arch_components", {
   ...ids,
@@ -66,13 +109,19 @@ export const archComponents = pgTable("arch_components", {
     IPermissionVisibility[]
   >(),
 
-  	// ── Override chain ───────────────────────────────────────────
-  	// When set, this component *extends* the referenced component.
-  	// Tenant-scoped: a tenant creates a row with this pointing to a
-  	// system component. Fields not set here fall back to the base.
-  	overridesComponentId: integer("overrides_component_id").references(
-  		(): any => archComponents.id,
-  	),
+	  // ── Delta target (component-level customization) ───────────────
+	  // When set, this component is a tenant-scoped delta of another
+	  // component: its tree is the base's tree with `editOps` applied on
+	  // top at read time (no materialized fork rows). Deltas always
+	  // reference a BASE component (a row with editOps = null) and always
+	  // carry a tenantId.
+	  baseComponentId: integer("base_component_id").references(
+	  	(): any => archComponents.id,
+	  ),
+
+	  // The delta — the builder's edit history (selector + op + value).
+	  // Null for base components.
+	  editOps: json("edit_ops").$type<IEditOp[]>(),
 
   // ── Status ───────────────────────────────────────────────────
   displayOrder: integer("display_order").default(0).notNull(),
@@ -88,24 +137,22 @@ export const archComponents = pgTable("arch_components", {
 // Relations
 // ──────────────────────────────────────────────────────────────────
 
-export const archComponentsRelations = relations(
-  archComponents,
-  ({ one, many }) => ({
-    // Instance → blueprint
-    blueprint: one(archComponentBlueprints, {
-      fields: [archComponents.blueprintId],
-      references: [archComponentBlueprints.id],
-      relationName: "blueprint",
-    }),
-    // Override source (self-referencing)
-    overridesSource: one(archComponents, {
-      fields: [archComponents.overridesComponentId],
-      references: [archComponents.id],
-      relationName: "overridesSource",
-    }),
-    // Elements belonging to this component
-    elements: many(archComponentElements),
-    // Override rows targeting this component
-    overrides: many(archComponentOverrides),
-  }),
-);
+	export const archComponentsRelations = relations(
+	  archComponents,
+	  ({ one, many }) => ({
+	    // Instance → blueprint
+	    blueprint: one(archComponentBlueprints, {
+	      fields: [archComponents.blueprintId],
+	      references: [archComponentBlueprints.id],
+	      relationName: "blueprint",
+	    }),
+	    // Delta target (self-referencing)
+	    baseComponent: one(archComponents, {
+	      fields: [archComponents.baseComponentId],
+	      references: [archComponents.id],
+	      relationName: "baseComponent",
+	    }),
+	    // Elements belonging to this component
+	    elements: many(archComponentElements),
+	  }),
+	);
