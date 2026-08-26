@@ -108,11 +108,11 @@ export class ScreensService extends MetadataBaseService<
   // List — filtered by tenant-membership + permission visibility
   // ──────────────────────────────────────────────────────────────────
 
-  	override async findMany(filters: any) {
-  		const result = await super.findMany(filters);
-  		if (result instanceof HttpException) return result;
+  		override async findMany(filters: any) {
+  			const result = await super.findMany(filters);
+  			if (result instanceof HttpException) return result;
 
-  		const tenantId = this.requestContext?.getTenantId();
+  			const tenantId = this.requestContext?.getEffectiveTenantId();
   		const isSuperAdmin = this.requestContext?.getIsSuperAdmin() ?? false;
   		const moduleReqs = await this.resolveModuleRequirements(
   			result.data.map((s: any) => s.moduleId),
@@ -210,8 +210,8 @@ export class ScreensService extends MetadataBaseService<
     const screen = await this.repo.selectOneById(screenId);
     if (!screen) return new NotFoundDto("TODO");
 
-    		// 1.25 Check tenant-membership visibility (screen + its module)
-    		const tenantId = this.requestContext?.getTenantId();
+    			// 1.25 Check tenant-membership visibility (screen + its module)
+    			const tenantId = this.requestContext?.getEffectiveTenantId();
     		const isSuperAdmin = this.requestContext?.getIsSuperAdmin() ?? false;
     		if (
     			!isSuperAdmin &&
@@ -253,6 +253,15 @@ export class ScreensService extends MetadataBaseService<
     					requiredPermissions: visPerms,
     				});
     		}
+
+    // 1.6 Tier + feature gating (mirrors findMany — deep links must not
+    // bypass the module's requiredTier/requiresFeature)
+    if (this.capability && !(await this.capability.canAccess(screen))) {
+      return new ForbiddenDto("errors.forbidden").details({
+        reason: "screen_required_tier",
+        required: screen.requiredTier ?? screen.requiresFeature ?? null,
+      });
+    }
 
     // 2. Load screen context (optional)
     const context = this.screenContextsRepo

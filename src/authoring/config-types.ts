@@ -20,6 +20,23 @@ export interface IColumnConfig {
 	sortable?: boolean;
 	filterable?: boolean;
 	filterType?: "text" | "number" | "select" | "date" | "boolean";
+	/**
+	 * Option source for select filters — a static list or an API endpoint
+	 * (e.g. DB-defined enums like tiers, which can't be hard-coded).
+	 * The DynamicTable fetches service options and renders them as the
+	 * filter dropdown.
+	 */
+	filterOptions?: {
+		type: "static" | "service";
+		/** static: the option list (labels support $trl_ keys). */
+		options?: Array<{ label: string; value: string }>;
+		/** service: fetch options from this endpoint. */
+		endpoint?: string;
+		/** service: row field used as the option label (default "displayName"). */
+		labelField?: string;
+		/** service: row field used as the option value (default "id"). */
+		valueField?: string;
+	};
 	align?: "left" | "center" | "right";
 	format?: {
 		type: string;
@@ -45,6 +62,8 @@ export interface IColumnConfig {
 		isHidden?: boolean;
 		/** Make the field read-only in specific dialog contexts (e.g. edit). */
 		readOnlyWhen?: { context?: string[] };
+		/** Show the field only in specific dialog contexts (e.g. create). */
+		visibleWhen?: { context?: string[] };
 		validations?: FieldValidations;
 		/** Options source for select/reference fields — emitted as element overrides. */
 		datasource?: FieldDatasource;
@@ -56,6 +75,11 @@ export interface IColumnConfig {
 		 * is "tenant.displayName" while the field-def is named "tenantName").
 		 */
 		columnName?: string;
+		/**
+		 * Feature flag (features.name) — the field is hidden unless the flag is
+		 * enabled for the current tenant (e.g. MI selection on the service form).
+		 */
+		requiresFeature?: string;
 		uiComponentId?: number;
 	}
 
@@ -224,6 +248,8 @@ export interface IPaperConfig extends IComponentIdentity {
 export interface ILayoutConfig extends IComponentIdentity {
 	title?: string;
 	description?: string;
+	/** Vertical gap between content children (MUI Stack spacing). */
+	spacing?: number;
 	/** Paper surface options (see IPaperConfig). */
 	elevation?: number;
 	padding?: number | string;
@@ -264,6 +290,17 @@ export interface IButtonConfig extends IComponentIdentity {
 		| "navigate";
 	variant?: "contained" | "outlined" | "text";
 	color?: string;
+	/**
+	 * Feature flag (features.name) — the button is hidden unless the flag
+	 * is enabled for the current tenant (e.g. the create-version action
+	 * behind "service_versioning").
+	 */
+	requiresFeature?: string;
+	/**
+	 * Static request body for apiCall actions — overrides the default
+	 * (whole-row) payload (e.g. stage transitions: { stage: "published" }).
+	 */
+	body?: Record<string, unknown>;
 	/** submit / apiCall: the request payload. (For submit buttons this lives
 	 *  on the FORM — IFormConfig.submit; the button only declares the action.) */
 	endpoint?: string;
@@ -271,6 +308,11 @@ export interface IButtonConfig extends IComponentIdentity {
 	context?: string;
 	successMessage?: string;
 	successRedirect?: string;
+	/** apiCall (table actions): what happens after success. Defaults to
+	 *  "refreshTable" (or "navigate" when successRedirect is set).
+	 *  "refreshAll" revalidates every SWR key — e.g. toggling a tenant
+	 *  feature must refresh the feature flags consumed by useFeatures. */
+	onSuccess?: "refreshTable" | "refreshAll" | "closeDialog" | "navigate";
 	stateContext?: string;
 	fieldMap?: Record<string, string>;
 	/** openDialog: the dialog form component. */
@@ -293,7 +335,7 @@ export interface ILinkConfig extends IComponentIdentity {
 // ── Table ─────────────────────────────────────────────────────────
 
 export interface ITableOnRowClick {
-	action: "openDialog" | "apiCall" | "navigate";
+	action?: "openDialog" | "apiCall" | "navigate";
 	/** openDialog: the dialog form component. */
 	dialog?: { componentId: number; context?: string };
 	/** apiCall: the request. */
@@ -302,6 +344,18 @@ export interface ITableOnRowClick {
 	/** navigate: the target path (supports {id} substitution). */
 	path?: string;
 	confirm?: IButtonConfirm;
+	/**
+	 * Legacy direct-redirect format: a path template (supports {id} and
+	 * nested placeholders like {serviceVersions[0].id}).
+	 */
+	redirect?: string;
+	/**
+	 * Feature-gated navigation: when this feature flag is OFF for the tenant,
+	 * `fallbackRedirect` is used instead of `redirect` (e.g. a single-version
+	 * workspace jumps straight to the version's operations).
+	 */
+	fallbackFeature?: string;
+	fallbackRedirect?: string;
 }
 
 export interface ITableConfig extends IComponentIdentity {
@@ -330,6 +384,12 @@ export interface ITableConfig extends IComponentIdentity {
 	rowActions?: AuthoringChild[];
 	/** What happens when a row is clicked. */
 	onRowClick?: ITableOnRowClick;
+	/** Row selection (e.g. the available-operations picker in the link-ops
+	 *  dialog) — enables MRT's checkbox column and feeds selection actions. */
+	selection?: {
+		enabled?: boolean;
+		actions?: AuthoringChild[];
+	};
 }
 
 // ── Charts & metrics ────────────────────────────────────────────
@@ -388,10 +448,23 @@ export interface IAuditHistoryConfig extends IComponentIdentity {
 
 export interface IListConfig extends IComponentIdentity {
 	datasource?: {
+		type?: "rest";
 		endpoint: string;
 		method?: "GET" | "POST";
 		params?: Record<string, unknown>;
 	};
+	/** Card rendering settings (consumed by ListRenderer). */
+	settings?: {
+		showTypeBadge?: boolean;
+		valueField?: string;
+		emptyMessage?: string;
+		/** Open the first openDialog row action when a card is clicked. */
+		openDialogOnCardClick?: boolean;
+	};
+	/** Toolbar actions (TableAction-shaped — consumed by ListRenderer). */
+	toolbarActions?: unknown[];
+	/** Row actions (TableAction-shaped — consumed by ListRenderer). */
+	rowActions?: unknown[];
 }
 
 export interface IScreenTreeConfig extends IComponentIdentity {

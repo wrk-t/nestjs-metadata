@@ -94,7 +94,7 @@ export class ModulesService extends MetadataBaseService<
 	    const result = await super.findMany(filters);
 	    if (result instanceof HttpException) return result;
 
-	const tenantId = this.requestContext?.getTenantId();
+	const tenantId = this.requestContext?.getEffectiveTenantId();
 	const isSuperAdmin = this.requestContext?.getIsSuperAdmin() ?? false;
 	const kept: any[] = [];
 	for (const m of result.data) {
