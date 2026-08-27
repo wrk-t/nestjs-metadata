@@ -154,8 +154,24 @@ export class ScreensService extends MetadataBaseService<
   			}
 
   			// Tier + feature gating (features resolve per tenant; super admin
-  			// bypasses)
-  			if (this.capability && !(await this.capability.canAccess(s))) {
+  			// bypasses). Only when the request carries an auth context — the
+  			// unguarded list endpoint serves raw rows and the front filters by
+  			// the user's /users/me features + permissions.
+  			if (hasScopeMap && this.capability && !(await this.capability.canAccess(s))) {
+  				continue;
+  			}
+
+  			// Inverse feature gate — screens carrying meta.hiddenWhenFeature are
+  			// hidden when the feature is ENABLED (e.g. the default-menu screen
+  			// when multi-menu is on). Same context rule as above.
+  			const hiddenWhen = (s.meta as { hiddenWhenFeature?: string } | null)
+  				?.hiddenWhenFeature;
+  			if (
+  				hiddenWhen &&
+  				hasScopeMap &&
+  				this.capability &&
+  				(await this.capability.isFeatureEnabled(hiddenWhen))
+  			) {
   				continue;
   			}
 

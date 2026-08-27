@@ -84,8 +84,13 @@ export class CapabilityService {
 	}
 
 	/**
-	 * Whether a feature flag is enabled for the current tenant, following
-	 * the tier-ceiling + override resolution (see file header).
+	 * Whether a feature flag is enabled for the current tenant.
+	 *
+	 * The app's feature model is the `tenant_feature` junction (the same
+	 * source `/users/me` features come from): a row present = enabled.
+	 * The tier-based offering (`tier_feature` via tenants.tier_id) is
+	 * attempted first when the tables exist, guarded — the tier model
+	 * hasn't landed in the schemas yet.
 	 */
 	async isFeatureEnabled(featureName: string): Promise<boolean> {
 		if (this.isSuperAdmin) return true;
@@ -98,29 +103,45 @@ export class CapabilityService {
 		const feat = featRows?.[0];
 		if (!feat?.id) return false;
 
-		const { rows: tierRows } = await this.db.execute<
-			{ enabled: boolean; overridable: boolean }[]
-		>(sql`
-			SELECT tf.enabled, tf.overridable
-			FROM tier_feature tf
-			JOIN tenants t ON t.tier_id = tf.tier_id
-			WHERE t.id = ${tenantId} AND tf.feature_id = ${feat.id}
-			LIMIT 1
-		`);
-		const tierRow = tierRows?.[0];
-		if (!tierRow) return false; // not part of the tier's offering
-
-		if (tierRow.overridable) {
-			const { rows: overrideRows } = await this.db.execute<{ enabled: boolean }[]>(sql`
-				SELECT enabled FROM tenant_feature
-				WHERE tenant_id = ${tenantId} AND feature_id = ${feat.id}
+		// Tier-based offering first — only when the tier model exists
+		// (tier_feature table + tenants.tier_id). Any missing table/column
+		// falls through to the junction below.
+		try {
+			const { rows: tierRows } = await this.db.execute<
+				{ enabled: boolean; overridable: boolean }[]
+			>(sql`
+				SELECT tf.enabled, tf.overridable
+				FROM tier_feature tf
+				JOIN tenants t ON t.tier_id = tf.tier_id
+				WHERE t.id = ${tenantId} AND tf.feature_id = ${feat.id}
 				LIMIT 1
 			`);
-			const override = overrideRows?.[0];
-			if (override) return override.enabled === true;
+			const tierRow = tierRows?.[0];
+			if (tierRow) {
+				if (tierRow.overridable) {
+					const { rows: overrideRows } = await this.db.execute<
+						{ enabled: boolean }[]
+					>(sql`
+						SELECT enabled FROM tenant_feature
+						WHERE tenant_id = ${tenantId} AND feature_id = ${feat.id}
+						LIMIT 1
+					`);
+					const override = overrideRows?.[0];
+					if (override) return override.enabled === true;
+				}
+				return tierRow.enabled === true;
+			}
+		} catch {
+			// tier model not present — fall through to the junction
 		}
 
-		return tierRow.enabled === true;
+		// App feature model: tenant_feature junction (row present = enabled).
+		const { rows: junctionRows } = await this.db.execute<{ one: number }[]>(sql`
+			SELECT 1 AS one FROM tenant_feature
+			WHERE tenant_id = ${tenantId} AND feature_id = ${feat.id}
+			LIMIT 1
+		`);
+		return (junctionRows?.length ?? 0) > 0;
 	}
 
 	/**

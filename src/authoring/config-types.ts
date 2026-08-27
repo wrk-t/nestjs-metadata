@@ -62,7 +62,7 @@ export interface IColumnConfig {
 		isHidden?: boolean;
 		/** Make the field read-only in specific dialog contexts (e.g. edit). */
 		readOnlyWhen?: { context?: string[] };
-		/** Show the field only in specific dialog contexts (e.g. create). */
+		/** Hide the field unless the form is in one of these contexts (e.g. password on create only). */
 		visibleWhen?: { context?: string[] };
 		validations?: FieldValidations;
 		/** Options source for select/reference fields — emitted as element overrides. */

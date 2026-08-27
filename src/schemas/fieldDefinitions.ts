@@ -32,6 +32,7 @@ export const fieldDefinitions = pgTable("field_definitions", {
         | ["Max", number, string?]
         | ["Pattern", string, string?]
         | ["Unique"]
+        | ["SameAs", string, string?]
         | ["Custom", string]
       >
     >(),
