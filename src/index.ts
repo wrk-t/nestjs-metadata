@@ -20,6 +20,7 @@ export * from "./modules";
 
 // ── Services ───────────────────────────────────────────────
 export { EntitiesService } from "./services/entities.service";
+export { EntityTypesService } from "./services/entity-types.service";
 export { FieldDefinitionsService } from "./services/field-definitions.service";
 export { UiComponentsService } from "./services/ui-components.service";
 export { ScreensService } from "./services/screens.service";
@@ -41,6 +42,7 @@ export type {
 
 // ── Repositories ───────────────────────────────────────────
 export { EntitiesPgRepository } from "./repositories/entities.pg.repository";
+export { EntityTypesPgRepository } from "./repositories/entity-types.pg.repository";
 export { FieldDefinitionsPgRepository } from "./repositories/field-definitions.pg.repository";
 export { UiComponentsPgRepository } from "./repositories/ui-components.pg.repository";
 export { ScreensPgRepository } from "./repositories/screens.pg.repository";

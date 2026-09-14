@@ -1,3 +1,4 @@
+import type { IBlueprintDefinition } from "./blueprints";
 import { DEFAULT_BLUEPRINTS } from "./blueprints";
 
 // ──────────────────────────────────────────────────────────────────
@@ -30,12 +31,18 @@ export function getBlueprintId(key: string): number {
 }
 
 /**
- * Stamp the package's blueprint catalog (DEFAULT_BLUEPRINTS) with the
- * app's ids → arch_component_blueprints rows. Throws if a catalog key
- * has no id, so the catalog and the registry can never drift.
+ * Stamp a blueprint catalog with the app's ids → arch_component_blueprints
+ * rows. Throws if a catalog key has no id, so the catalog and the registry
+ * can never drift.
+ *
+ * `catalog` defaults to the package's dashboard/generic catalog; apps pass
+ * their own app-owned catalogs (e.g. a site-builder catalog) alongside it.
  */
-export function createBlueprintRows(idMap: Record<string, number>) {
-	return DEFAULT_BLUEPRINTS.map((def) => {
+export function createBlueprintRows(
+	idMap: Record<string, number>,
+	catalog: IBlueprintDefinition[] = DEFAULT_BLUEPRINTS,
+) {
+	return catalog.map((def) => {
 		const id = idMap[def.key];
 		if (!id) {
 			throw new Error(

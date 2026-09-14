@@ -180,11 +180,14 @@ export class ComponentsPgRepository extends Repository<
 
 	  /**
 	   * The tenant's delta row targeting a base component (if any).
-	   * Deltas are tenant-scoped customizations: one row per (base, tenant).
+	   * One row per (base, tenant, externalId) — pass the external id
+	   * to resolve a resource-scoped delta (e.g. per-menu), or omit it
+	   * for the tenant-wide delta (externalId NULL).
 	   */
 	  async findDeltaFor(
 	    baseComponentId: number,
 	    tenantId: string | null | undefined,
+	    externalId?: string | null,
 	  ): Promise<TComponentRow | null> {
 	    if (!tenantId) return null;
 	    return await this.execute(async (db) => {
@@ -195,6 +198,9 @@ export class ComponentsPgRepository extends Repository<
 	          and(
 	            eq(archComponents.baseComponentId, baseComponentId),
 	            eq(archComponents.tenantId, tenantId),
+	            externalId
+	              ? eq(archComponents.externalId, externalId)
+	              : isNull(archComponents.externalId),
 	          ),
 	        )
 	        .limit(1);
@@ -204,11 +210,13 @@ export class ComponentsPgRepository extends Repository<
 
 	  /**
 	   * Batch variant for ref-walking: base component ids → their tenant
-	   * delta rows (only for bases that have one).
+	   * delta rows (only for bases that have one). The external id is
+	   * the same render context for every ref.
 	   */
 	  async findDeltasFor(
 	    baseComponentIds: number[],
 	    tenantId: string | null | undefined,
+	    externalId?: string | null,
 	  ): Promise<Map<number, TComponentRow>> {
 	    const out = new Map<number, TComponentRow>();
 	    if (!tenantId || baseComponentIds.length === 0) return out;
@@ -220,6 +228,9 @@ export class ComponentsPgRepository extends Repository<
 	          and(
 	            inArray(archComponents.baseComponentId, baseComponentIds),
 	            eq(archComponents.tenantId, tenantId),
+	            externalId
+	              ? eq(archComponents.externalId, externalId)
+	              : isNull(archComponents.externalId),
 	          ),
 	        );
 	      for (const r of rows) {

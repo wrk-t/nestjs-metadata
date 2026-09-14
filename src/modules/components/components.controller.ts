@@ -30,28 +30,30 @@ export class ComponentsController {
       "Returns a fully resolved component tree: blueprint metadata, elements grouped by slot, referenced sub-components, and tenant overrides applied.",
     operationId: "get_component_render_v1",
   })
-  async findById(
-    @Param("id", ParseIntPipe) id: number,
-    @Query("include") include?: string,
-    @Query("context") context?: string,
-    @Headers("accept-language") headerLang?: string,
-    @Headers("x-tenant-id") tenantId?: string,
-    @Req() req?: any,
-  ) {
-    if (include === "render") {
-      // Try multiple ways to get the locale header
-      const rawHeader = req?.headers?.["accept-language"];
-      const lang =
-        headerLang ?? (Array.isArray(rawHeader) ? rawHeader[0] : rawHeader);
-      const locale = lang?.split(",")?.[0]?.trim() ?? "en";
+	  async findById(
+	    @Param("id", ParseIntPipe) id: number,
+	    @Query("include") include?: string,
+	    @Query("context") context?: string,
+	    @Query("externalId") externalId?: string,
+	    @Headers("accept-language") headerLang?: string,
+	    @Headers("x-tenant-id") tenantId?: string,
+	    @Req() req?: any,
+	  ) {
+	    if (include === "render") {
+	      // Try multiple ways to get the locale header
+	      const rawHeader = req?.headers?.["accept-language"];
+	      const lang =
+	        headerLang ?? (Array.isArray(rawHeader) ? rawHeader[0] : rawHeader);
+	      const locale = lang?.split(",")?.[0]?.trim() ?? "en";
 
-      const result = await this.svc.getRender(id, {
-        locale,
-        tenantId: tenantId ?? null,
-        context: context ? JSON.parse(context) : undefined,
-      });
-      return new OkDto(result);
-    }
+	      const result = await this.svc.getRender(id, {
+	        locale,
+	        tenantId: tenantId ?? null,
+	        externalId: externalId ?? null,
+	        context: context ? JSON.parse(context) : undefined,
+	      });
+	      return new OkDto(result);
+	    }
     const record = await this.svc.selectOneById(id);
     return new OkDto(new SimpleEntityDto(record as any));
   }

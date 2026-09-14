@@ -10,6 +10,7 @@ import { MetadataModuleBootstrapService } from "./bootstrap/metadata-module.boot
 import { ComponentsModule } from "./modules/components/components.module";
 // ── Controller modules ──
 import { EntitiesModule } from "./modules/entities/entities.module";
+import { EntityTypesModule } from "./modules/entity-types/entity-types.module";
 import { FeaturesModule } from "./modules/features/features.module";
 import { FieldDefinitionsModule } from "./modules/field-definitions/field-definitions.module";
 import { ModulesModule } from "./modules/modules-navigation/modules.module";
@@ -19,6 +20,7 @@ import { UiComponentsModule } from "./modules/ui-components/ui-components.module
 import { ComponentsPgRepository } from "./repositories/components.pg.repository";
 // ── Repositories ──
 import { EntitiesPgRepository } from "./repositories/entities.pg.repository";
+import { EntityTypesPgRepository } from "./repositories/entity-types.pg.repository";
 import { FeaturesPgRepository } from "./repositories/features.pg.repository";
 import { SettingsPgRepository } from "./repositories/settings.pg.repository";
 import { FieldDefinitionsPgRepository } from "./repositories/field-definitions.pg.repository";
@@ -29,6 +31,7 @@ import { UiComponentsPgRepository } from "./repositories/ui-components.pg.reposi
 import { ComponentsService } from "./services/components.service";
 // ── Services ──
 import { EntitiesService } from "./services/entities.service";
+import { EntityTypesService } from "./services/entity-types.service";
 import { FeaturesService } from "./services/features.service";
 import { SettingsService } from "./services/settings.service";
 import { FieldDefinitionsService } from "./services/field-definitions.service";
@@ -69,9 +72,10 @@ export class MetadataModule {
       },
       // ── Bootstrap (metadata module self-registration) ──
       MetadataModuleBootstrapService,
-      // ── Services ──
-      EntitiesService,
-      FieldDefinitionsService,
+	      // ── Services ──
+	      EntitiesService,
+	      EntityTypesService,
+	      FieldDefinitionsService,
       UiComponentsService,
 	      ScreensService,
 	      ScreenContextsService,
@@ -82,6 +86,7 @@ export class MetadataModule {
 		      CapabilityService,
 		      // ── Repositories ──
 	      EntitiesPgRepository,
+	      EntityTypesPgRepository,
 	      FieldDefinitionsPgRepository,
 	      UiComponentsPgRepository,
 	      ScreensPgRepository,
@@ -107,9 +112,10 @@ export class MetadataModule {
     return {
       global: true,
       module: MetadataModule,
-      imports: [
-        EntitiesModule,
-        FieldDefinitionsModule,
+	      imports: [
+	        EntitiesModule,
+	        EntityTypesModule,
+	        FieldDefinitionsModule,
         UiComponentsModule,
 	        ScreensModule,
 	        ScreenContextsModule,
@@ -119,9 +125,10 @@ export class MetadataModule {
         ...(options.imports ?? []),
       ],
       providers,
-      exports: [
-        EntitiesService,
-        FieldDefinitionsService,
+	      exports: [
+	        EntitiesService,
+	        EntityTypesService,
+	        FieldDefinitionsService,
         UiComponentsService,
 	        ScreensService,
 	        ScreenContextsService,

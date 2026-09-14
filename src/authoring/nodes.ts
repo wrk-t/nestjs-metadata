@@ -1,8 +1,9 @@
 import type { IPermissionVisibility } from "../schemas";
 import { SeedContext } from "./compile";
 import type {
-	IAvatarConfig,
+	FieldType,
 	IAuditHistoryConfig,
+	IAvatarConfig,
 	IBoxConfig,
 	IButtonConfig,
 	IChartConfig,
@@ -16,6 +17,7 @@ import type {
 	ILinkConfig,
 	IListConfig,
 	ILogoUploaderConfig,
+	IPaperConfig,
 	IPerMethodPricingConfig,
 	IRawJsonConfig,
 	IScreenTreeConfig,
@@ -27,8 +29,6 @@ import type {
 	ITabsConfig,
 	ITestTabConfig,
 	ITypographyConfig,
-	IPaperConfig,
-	FieldType,
 } from "./config-types";
 import { getBlueprintId } from "./registry";
 
@@ -195,7 +195,9 @@ export abstract class Component<
 		const ctor = this.constructor as typeof Component;
 		const nodeKeys = new Set(Object.keys(ctor.nodeSlots));
 		const out: Record<string, unknown> = {};
-		for (const [key, value] of Object.entries(this.config as unknown as Record<string, unknown>)) {
+		for (const [key, value] of Object.entries(
+			this.config as unknown as Record<string, unknown>,
+		)) {
 			if (IDENTITY_KEYS.has(key) || nodeKeys.has(key)) continue;
 			out[key] = value;
 		}
@@ -266,7 +268,9 @@ export abstract class Component<
 			return;
 		}
 
-		throw new Error(`Authoring: unknown child in slot "${slot}" of component "${this.id}".`);
+		throw new Error(
+			`Authoring: unknown child in slot "${slot}" of component "${this.id}".`,
+		);
 	}
 }
 
@@ -499,12 +503,14 @@ export abstract class FieldNode extends AuthoringNode {
 
 	/** Instance-specific element overrides (renderer-facing). */
 	elementOverrides(): Record<string, unknown> {
-		const out: Record<string, unknown> = {};
+		// Passthrough first — explicit DSL keys below win when they overlap.
+		const out: Record<string, unknown> = { ...(this.config.overrides ?? {}) };
 		const cfg = this.config;
 		if (cfg.label != null || cfg.displayName != null) {
 			out.displayName = cfg.displayName ?? cfg.label;
 		}
 		if (cfg.columnName != null) out.name = cfg.columnName;
+		if (cfg.defaultValue !== undefined) out.defaultValue = cfg.defaultValue;
 		if (cfg.description != null) out.description = cfg.description;
 		if (cfg.isRequired != null) out.isRequired = cfg.isRequired;
 		if (cfg.isReadOnly != null) out.isReadOnly = cfg.isReadOnly;

@@ -4,12 +4,12 @@ import {
   RequestContext,
   ITranslationService,
   TBasePgTable,
-  BasePostgresRepository,
+  type IBaseDrizzleRepository,
 } from "@wrk-t/nestjs-core";
 
 export abstract class MetadataBaseService<
   TSchema extends TBasePgTable,
-  TRepo extends BasePostgresRepository<any, TSchema, TId>,
+  TRepo extends IBaseDrizzleRepository<TSchema, TId>,
   TId = string,
 > extends ScopedBaseService<TSchema, TRepo, TId> {
   abstract logger: Logger;

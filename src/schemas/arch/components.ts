@@ -1,5 +1,12 @@
-import { relations } from "drizzle-orm";
-import { boolean, integer, json, pgTable, varchar } from "drizzle-orm/pg-core";
+import { isNull, relations, sql } from "drizzle-orm";
+import {
+	boolean,
+	integer,
+	json,
+	pgTable,
+	uniqueIndex,
+	varchar,
+} from "drizzle-orm/pg-core";
 import { ids } from "../../helpers/ids";
 import { timestamps } from "../../helpers/timestamps";
 import { archComponentBlueprints } from "./componentBlueprints";
@@ -25,6 +32,12 @@ export interface IPermissionVisibility {
 // materialized fork rows. Deltas are always tenant-scoped (tenantId
 // set) and always target a BASE component (baseComponentId set); a
 // delta never targets another delta.
+//
+// A delta may be further scoped to an EXTERNAL resource via
+// `externalId` (optional) — an opaque id owned by the app (e.g. a
+// menu's CUID, a page's slug). One row per (base, tenant, externalId);
+// NULL externalId = the tenant-wide delta. Resolution passes the
+// external id through the render request (e.g. ?externalId=).
 // ──────────────────────────────────────────────────────────────────
 
 export type TEditOperation =
@@ -123,15 +136,35 @@ export const archComponents = pgTable("arch_components", {
 	  // Null for base components.
 	  editOps: json("edit_ops").$type<IEditOp[]>(),
 
+	  // Optional external-resource scope for the delta (e.g. a menu's
+	  // CUID). NULL = the tenant-wide customization. Polymorphic — no FK.
+	  externalId: varchar("external_id", { length: 100 }),
+
   // ── Status ───────────────────────────────────────────────────
   displayOrder: integer("display_order").default(0).notNull(),
   tenantId: varchar("tenant_id", { length: 24 }),
   isActive: boolean("is_active").default(true).notNull(),
   isSystem: boolean("is_system").default(false).notNull(),
 
-  // ── Metadata ─────────────────────────────────────────────────
-  meta: json("meta").$type<Record<string, unknown> | null>(),
-});
+	  // ── Metadata ─────────────────────────────────────────────────
+	  meta: json("meta").$type<Record<string, unknown> | null>(),
+	},
+	(table) => [
+		// One tenant-wide delta per (base, tenant) — externalId NULL.
+		// Base rows (baseComponentId NULL) are exempt: Postgres unique
+		// indexes treat NULLs as distinct.
+		uniqueIndex("arch_components_base_tenant_uniq").on(
+			table.baseComponentId,
+			table.tenantId,
+		).where(isNull(table.externalId)),
+		// One external-scoped delta per (base, tenant, externalId).
+		uniqueIndex("arch_components_base_tenant_external_uniq").on(
+			table.baseComponentId,
+			table.tenantId,
+			table.externalId,
+		).where(sql`${table.externalId} is not null`),
+	],
+);
 
 // ──────────────────────────────────────────────────────────────────
 // Relations

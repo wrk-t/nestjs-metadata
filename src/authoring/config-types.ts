@@ -60,6 +60,8 @@ export interface IColumnConfig {
 		isRequired?: boolean;
 		isReadOnly?: boolean;
 		isHidden?: boolean;
+		/** Default form value (create context) — e.g. a fixed typeId for template forms. */
+		defaultValue?: unknown;
 		/** Make the field read-only in specific dialog contexts (e.g. edit). */
 		readOnlyWhen?: { context?: string[] };
 		/** Hide the field unless the form is in one of these contexts (e.g. password on create only). */
@@ -81,6 +83,11 @@ export interface IColumnConfig {
 		 */
 		requiresFeature?: string;
 		uiComponentId?: number;
+		/**
+		 * Raw element-override passthrough (e.g. `behavior: { uploadEndpoint }`
+		 * for image fields). Explicit DSL keys win when they overlap.
+		 */
+		overrides?: Record<string, unknown>;
 	}
 
 // ──────────────────────────────────────────────────────────────────
@@ -248,6 +255,17 @@ export interface IPaperConfig extends IComponentIdentity {
 export interface ILayoutConfig extends IComponentIdentity {
 	title?: string;
 	description?: string;
+	/**
+	 * Optional entity fetch for a DYNAMIC header — the row's `name` /
+	 * `description` overlay the layout's own title/description (e.g. the
+	 * menu detail page shows the menu's name). `{param}` placeholders in
+	 * the endpoint resolve from the screen's path params.
+	 */
+	datasource?: {
+		endpoint: string;
+		method?: "GET" | "POST";
+		params?: Record<string, unknown>;
+	};
 	/** Vertical gap between content children (MUI Stack spacing). */
 	spacing?: number;
 	/** Paper surface options (see IPaperConfig). */
@@ -287,7 +305,10 @@ export interface IButtonConfig extends IComponentIdentity {
 		| "close"
 		| "openDialog"
 		| "apiCall"
-		| "navigate";
+		| "navigate"
+		| "custom";
+	/** custom actions: the host app's action id (e.g. "viewQr", "customizeQrStyle"). */
+	customAction?: string;
 	variant?: "contained" | "outlined" | "text";
 	color?: string;
 	/**

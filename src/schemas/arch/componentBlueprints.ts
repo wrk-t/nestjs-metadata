@@ -15,6 +15,11 @@ export interface IBlueprintSlot {
   description?: string;
   /** Names of blueprints accepted in this slot (e.g. ["field-renderer", "section"]) */
   accepts: string[];
+  /** Kinds accepted in this slot — a kind-constrained slot takes ANY
+   *  blueprint of that kind, so same-kind components are interchangeable
+   *  (e.g. a shell header slot accepting kind "nav" lets any nav be
+   *  swapped in without listing concrete blueprints). */
+  acceptsKinds?: string[];
   /** Layout strategy for children */
   grid?: "flow" | "css-grid" | "none";
   /** Paths within elements filling this slot that tenants can override */
@@ -36,6 +41,28 @@ export interface IBlueprintContractOutput {
   name: string;
   type: string;
   description?: string;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Config-field declaration — the FULL config surface of a blueprint,
+// declared on the blueprint itself (stored in its `meta.configFields`).
+// Each property carries a `clientVisible` flag: whether regular
+// (tenant) users see and edit it in the client-side editors. System
+// clientVisible: false.
+// ──────────────────────────────────────────────────────────────────
+
+export interface IBlueprintConfigField {
+  /** Dot path relative to the component `config`, e.g. "text" or "datasource.endpoint". */
+  path: string;
+  type: "string" | "multiLine" | "number" | "boolean" | "select" | "color";
+  /** `$trl_` key for the editor label (resolved via TranslationService). */
+  labelKey?: string;
+  /** Allowed values for `select`/`color` fields. */
+  options?: string[];
+  defaultValue?: unknown;
+  required?: boolean;
+  /** Visible + editable for regular users on the client (tenant UI). */
+  clientVisible: boolean;
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -81,6 +108,10 @@ export const archComponentBlueprints = pgTable("arch_component_blueprints", {
 
   // ── Status ───────────────────────────────────────────────────
   category: varchar("category", { length: 100 }),
+  /** What a blueprint IS — its kind role. Same-kind components can
+   *  replace each other in kind-constrained slots (e.g. "nav",
+   *  "footer", "menu", "hero", "section", "shell", "page"). */
+  kind: varchar("kind", { length: 50 }),
   isActive: boolean("is_active").default(true).notNull(),
   isSystem: boolean("is_system").default(false).notNull(),
 

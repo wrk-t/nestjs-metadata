@@ -27,6 +27,11 @@ export type {
 
 // ── Shared primitives ───────────────────────────────────────
 export { entities } from "./entities";
+export { entityTypes, entityTypesRelations } from "./entityTypes";
+export type {
+	IEntityTypeField,
+	TEntityTypeFieldType,
+} from "./entityTypes";
 export { features } from "./features";
 export { settings, settingsRelations } from "./settings";
 export {

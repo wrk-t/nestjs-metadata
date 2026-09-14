@@ -44,6 +44,11 @@ export interface IRenderedComponent {
   id: number;
   blueprintId: number;
   blueprintName: string;
+  /** What the blueprint IS — same-kind components are interchangeable
+   *  in kind-constrained slots ("nav", "footer", "menu", "hero",
+   *  "section", "shell", "page", …). Null when the catalog doesn't
+   *  declare one. */
+  kind?: string | null;
   name: string;
   displayName: string;
   description: string | null;
@@ -72,6 +77,10 @@ export interface IRenderedComponent {
   isActive: boolean;
   isSystem: boolean;
   meta: Record<string, unknown> | null;
+
+  // Blueprint-level declarations (e.g. meta.configFields with the
+  // per-property clientVisible flag) — editors render from metadata.
+  blueprintMeta?: Record<string, unknown> | null;
 }
 
 /**

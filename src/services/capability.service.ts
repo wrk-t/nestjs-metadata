@@ -135,13 +135,18 @@ export class CapabilityService {
 			// tier model not present — fall through to the junction
 		}
 
-		// App feature model: tenant_feature junction (row present = enabled).
-		const { rows: junctionRows } = await this.db.execute<{ one: number }[]>(sql`
-			SELECT 1 AS one FROM tenant_feature
-			WHERE tenant_id = ${tenantId} AND feature_id = ${feat.id}
-			LIMIT 1
-		`);
-		return (junctionRows?.length ?? 0) > 0;
+		// App feature model: tenant_feature junction (row present = granted,
+		// `enabled` decides whether it is currently active).
+		const { rows: junctionRows } = await this.db.execute<{ enabled: boolean }[]>(
+			sql`
+				SELECT enabled FROM tenant_feature
+				WHERE tenant_id = ${tenantId} AND feature_id = ${feat.id}
+				LIMIT 1
+			`,
+		);
+		const junction = junctionRows?.[0];
+		if (junction) return junction.enabled === true;
+		return false;
 	}
 
 	/**

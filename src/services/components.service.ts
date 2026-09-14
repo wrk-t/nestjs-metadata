@@ -118,37 +118,41 @@ export class ComponentsService extends MetadataBaseService<
    * @param options — tenantId, locale, context for param resolution
    * @param depth — internal recursion guard (prevents infinite loops)
    */
-  async getRender(
-    componentId: number,
-    options?: {
-      tenantId?: string | null;
-      locale?: string;
-      context?: Record<string, unknown>;
-      depth?: number;
-    },
-  ): Promise<IComponentRenderResponse | NotFoundDto> {
-    const depth = options?.depth ?? 0;
-    if (depth > 8) {
-      return new BadRequestDto("Component nesting too deep (max 8 levels)");
-    }
+	  async getRender(
+	    componentId: number,
+	    options?: {
+	      tenantId?: string | null;
+	      /** External-resource scope for delta resolution (e.g. a menu id). */
+	      externalId?: string | null;
+	      locale?: string;
+	      context?: Record<string, unknown>;
+	      depth?: number;
+	    },
+	  ): Promise<IComponentRenderResponse | NotFoundDto> {
+	    const depth = options?.depth ?? 0;
+	    if (depth > 8) {
+	      return new BadRequestDto("Component nesting too deep (max 8 levels)");
+	    }
 
-	    const locale = options?.locale ?? this.requestContext?.getLocale() ?? "en";
-	    // Explicit header wins; otherwise the authenticated request's tenant
-	    // context (x-workspace: org:<tenantId> — what the browser sends) is
-	    // used, so tenant-scoped deltas apply on real renders.
-	    const tenantId =
-	      options?.tenantId ?? this.requestContext?.getTenantId() ?? null;
-	    const ctx = options?.context ?? {};
+		    const locale = options?.locale ?? this.requestContext?.getLocale() ?? "en";
+		    // Explicit header wins; otherwise the authenticated request's tenant
+		    // context (x-workspace: org:<tenantId> — what the browser sends) is
+		    // used, so tenant-scoped deltas apply on real renders.
+		    const tenantId =
+		      options?.tenantId ?? this.requestContext?.getTenantId() ?? null;
+		    const externalId = options?.externalId ?? null;
+		    const ctx = options?.context ?? {};
 
-    const data = await this.resolveComponentData(
-      componentId,
-      tenantId ?? undefined,
-    );
-    if (!data) return new NotFoundDto("Component not found");
+	    const data = await this.resolveComponentData(
+	      componentId,
+	      tenantId ?? undefined,
+	      externalId ?? undefined,
+	    );
+	    if (!data) return new NotFoundDto("Component not found");
 
-    // Resolve component_ref elements so their referenced component
-    // is available at render time.
-    await this.resolveRefs(data, tenantId, depth);
+	    // Resolve component_ref elements so their referenced component
+	    // is available at render time.
+	    await this.resolveRefs(data, tenantId, externalId, depth);
 
 	    // Build the rendered component
 	    const rendered = this.toRenderedComponent(data, ctx);
@@ -193,6 +197,7 @@ export class ComponentsService extends MetadataBaseService<
 	  async resolveComponentData(
 	    componentId: number,
 	    tenantId?: string | null,
+	    externalId?: string | null,
 	  ): Promise<TComponentRenderData | null> {
 	    const raw = await this.repo.getRenderData(
 	      componentId,
@@ -211,7 +216,11 @@ export class ComponentsService extends MetadataBaseService<
 	      if (!baseRow) return raw;
 	      baseData = baseRow;
 	    } else {
-	      delta = await this.repo.findDeltaFor(componentId, tenantId ?? undefined);
+	      delta = await this.repo.findDeltaFor(
+	        componentId,
+	        tenantId ?? undefined,
+	        externalId,
+	      );
 	    }
 
 	    if (!delta || !delta.editOps?.length) return raw;
@@ -253,11 +262,12 @@ export class ComponentsService extends MetadataBaseService<
    * (3 levels). A visited set guards against reference cycles and
    * diamond shapes, and the depth cap mirrors getRender's own guard.
    */
-  private async resolveRefs(
-    data: TComponentRenderData,
-    tenantId: string | null | undefined,
-    _depth: number,
-  ): Promise<void> {
+	  private async resolveRefs(
+	    data: TComponentRenderData,
+	    tenantId: string | null | undefined,
+	    externalId: string | null | undefined,
+	    _depth: number,
+	  ): Promise<void> {
     const MAX_REF_DEPTH = 8;
     const visited = new Set<number>();
 
@@ -291,6 +301,7 @@ export class ComponentsService extends MetadataBaseService<
 	      const tenantDeltas = await this.repo.findDeltasFor(
 	        ids,
 	        tenantId ?? undefined,
+	        externalId,
 	      );
 	      const directBaseIds = [
 	        ...new Set(
@@ -409,6 +420,7 @@ export class ComponentsService extends MetadataBaseService<
       id: component.id,
       blueprintId: blueprint.id,
       blueprintName: blueprint.name,
+      kind: blueprint.kind ?? null,
       name: component.name,
       displayName: component.displayName,
       description: component.description,
@@ -425,11 +437,14 @@ export class ComponentsService extends MetadataBaseService<
         | null
         | undefined,
       tenantId: component.tenantId,
-      isActive: component.isActive,
-      isSystem: component.isSystem,
-      meta: component.meta,
-    };
-  }
+      		isActive: component.isActive,
+      		isSystem: component.isSystem,
+      		meta: component.meta,
+      		// Blueprint-level declarations (config fields, client visibility)
+      		// ride along so client editors can render from metadata.
+      		blueprintMeta: blueprint.meta ?? null,
+      	};
+        }
 
   /**
    * Convert a single element row into the rendered element shape.
@@ -496,6 +511,7 @@ export class ComponentsService extends MetadataBaseService<
                 id: ref.id,
                 blueprintId: ref.blueprintId,
                 blueprintName: refBp?.name ?? "",
+                kind: refBp?.kind ?? null,
                 name: ref.name,
                 displayName: ref.displayName,
                 description: ref.description,
@@ -512,11 +528,12 @@ export class ComponentsService extends MetadataBaseService<
                   | null
                   | undefined,
                 tenantId: ref.tenantId,
-                isActive: ref.isActive,
-                isSystem: ref.isSystem,
-                meta: ref.meta,
-              }
-            : null,
+                				isActive: ref.isActive,
+                				isSystem: ref.isSystem,
+                				meta: ref.meta,
+                				blueprintMeta: refBp?.meta ?? null,
+                			  }
+                		    : null,
           paramBindings: el.paramBindings as Record<string, unknown> | null,
         };
       }
