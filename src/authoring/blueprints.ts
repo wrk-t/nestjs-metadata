@@ -935,4 +935,22 @@ export const DEFAULT_BLUEPRINTS: IBlueprintDefinition[] = [
 	    isSystem: true,
 	    meta: null,
 	  },
+  {
+    // Tenant wallet (Billing → Wallet). App-owned renderer: balance header,
+    // deposit form and the transaction ledger.
+    key: "walletStore",
+    name: "walletStore",
+    displayName: "$trl_bp_wallet_store",
+    description: "$trl_bp_wallet_store_desc",
+    slots: [],
+    overridable: ["displayName"],
+    contract: {
+      inputs: [{ name: "pathParams", required: false }],
+      outputs: [],
+    },
+    category: "core",
+    isActive: true,
+    isSystem: true,
+    meta: null,
+  },
 ];
