@@ -26,7 +26,6 @@ export { UiComponentsService } from "./services/ui-components.service";
 export { ScreensService } from "./services/screens.service";
 export { ScreenContextsService } from "./services/screen-contexts.service";
 export { ModulesService } from "./services/modules.service";
-export { FeaturesService } from "./services/features.service";
 export { SettingsService } from "./services/settings.service";
 export { ComponentsService } from "./services/components.service";
 export { CapabilityService } from "./services/capability.service";
@@ -48,7 +47,6 @@ export { UiComponentsPgRepository } from "./repositories/ui-components.pg.reposi
 export { ScreensPgRepository } from "./repositories/screens.pg.repository";
 export { ScreenContextsPgRepository } from "./repositories/screen-contexts.pg.repository";
 export { ModulesPgRepository } from "./repositories/modules.pg.repository";
-export { FeaturesPgRepository } from "./repositories/features.pg.repository";
 export { SettingsPgRepository } from "./repositories/settings.pg.repository";
 export { ComponentsPgRepository } from "./repositories/components.pg.repository";
 

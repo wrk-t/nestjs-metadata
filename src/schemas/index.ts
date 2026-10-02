@@ -32,7 +32,6 @@ export type {
 	IEntityTypeField,
 	TEntityTypeFieldType,
 } from "./entityTypes";
-export { features } from "./features";
 export { settings, settingsRelations } from "./settings";
 export {
   fieldDefinitions,

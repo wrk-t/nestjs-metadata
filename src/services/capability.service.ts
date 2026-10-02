@@ -87,7 +87,7 @@ export class CapabilityService {
 	 * Whether a feature flag is enabled for the current tenant.
 	 *
 	 * The app's feature model is the `tenant_feature` junction (the same
-	 * source `/users/me` features come from): a row present = enabled.
+	 * source `/users/me` features come from): a row present = granted, `enabled` decides.
 	 * The tier-based offering (`tier_feature` via tenants.tier_id) is
 	 * attempted first when the tables exist, guarded — the tier model
 	 * hasn't landed in the schemas yet.
@@ -97,7 +97,7 @@ export class CapabilityService {
 		const tenantId = this.requestContext?.getTenantId();
 		if (!tenantId) return false;
 
-		const { rows: featRows } = await this.db.execute<{ id: number }[]>(sql`
+		const { rows: featRows } = await this.db.execute<{ id: string }[]>(sql`
 			SELECT id FROM features WHERE name = ${featureName} LIMIT 1
 		`);
 		const feat = featRows?.[0];

@@ -11,7 +11,6 @@ import { ComponentsModule } from "./modules/components/components.module";
 // ── Controller modules ──
 import { EntitiesModule } from "./modules/entities/entities.module";
 import { EntityTypesModule } from "./modules/entity-types/entity-types.module";
-import { FeaturesModule } from "./modules/features/features.module";
 import { FieldDefinitionsModule } from "./modules/field-definitions/field-definitions.module";
 import { ModulesModule } from "./modules/modules-navigation/modules.module";
 import { ScreenContextsModule } from "./modules/screen-contexts/screen-contexts.module";
@@ -21,7 +20,6 @@ import { ComponentsPgRepository } from "./repositories/components.pg.repository"
 // ── Repositories ──
 import { EntitiesPgRepository } from "./repositories/entities.pg.repository";
 import { EntityTypesPgRepository } from "./repositories/entity-types.pg.repository";
-import { FeaturesPgRepository } from "./repositories/features.pg.repository";
 import { SettingsPgRepository } from "./repositories/settings.pg.repository";
 import { FieldDefinitionsPgRepository } from "./repositories/field-definitions.pg.repository";
 import { ModulesPgRepository } from "./repositories/modules.pg.repository";
@@ -32,7 +30,6 @@ import { ComponentsService } from "./services/components.service";
 // ── Services ──
 import { EntitiesService } from "./services/entities.service";
 import { EntityTypesService } from "./services/entity-types.service";
-import { FeaturesService } from "./services/features.service";
 import { SettingsService } from "./services/settings.service";
 import { FieldDefinitionsService } from "./services/field-definitions.service";
 import { ModulesService } from "./services/modules.service";
@@ -80,7 +77,6 @@ export class MetadataModule {
 	      ScreensService,
 	      ScreenContextsService,
 		      ModulesService,
-		      FeaturesService,
 		      SettingsService,
 		      ComponentsService,
 		      CapabilityService,
@@ -92,7 +88,6 @@ export class MetadataModule {
 	      ScreensPgRepository,
 	      ScreenContextsPgRepository,
 	      ModulesPgRepository,
-	      FeaturesPgRepository,
 	      SettingsPgRepository,
 	      ComponentsPgRepository,
 	    ];
@@ -120,7 +115,6 @@ export class MetadataModule {
 	        ScreensModule,
 	        ScreenContextsModule,
 	        ModulesModule,
-        FeaturesModule,
         ComponentsModule,
         ...(options.imports ?? []),
       ],
@@ -133,7 +127,6 @@ export class MetadataModule {
 	        ScreensService,
 	        ScreenContextsService,
 		        ModulesService,
-	        FeaturesService,
 	        SettingsService,
 	        ComponentsService,
 	        CapabilityService,
