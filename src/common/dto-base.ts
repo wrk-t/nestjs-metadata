@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { Type, Transform } from "class-transformer";
 import {
 	IsDate,
 	IsEnum,
@@ -57,6 +57,15 @@ export class BasePagableQueryDto {
 	@IsEnum({ asc: "asc", desc: "desc" })
 	@IsOptional()
 	sortOrder?: "asc" | "desc" = "desc";
+
+	@ApiProperty({
+		type: Boolean,
+		required: false,
+		description: "Include soft-deleted records in the result",
+	})
+	@Transform(({ value }) => value === true || value === "true")
+	@IsOptional()
+	includeDeleted?: boolean;
 }
 
 export class PaginatedDto<T> {
