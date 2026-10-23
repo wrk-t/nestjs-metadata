@@ -53,42 +53,42 @@ export interface IColumnConfig {
  * emitted as element overrides; `uiComponentId` is hoisted onto the
  * element row's column.
  */
-	export interface IFieldConfig extends IComponentIdentity {
-		/** Alias for displayName (React-style). */
-		label?: string;
-		placeholder?: string;
-		isRequired?: boolean;
-		isReadOnly?: boolean;
-		isHidden?: boolean;
-		/** Default form value (create context) — e.g. a fixed typeId for template forms. */
-		defaultValue?: unknown;
-		/** Make the field read-only in specific dialog contexts (e.g. edit). */
-		readOnlyWhen?: { context?: string[] };
-		/** Hide the field unless the form is in one of these contexts (e.g. password on create only). */
-		visibleWhen?: { context?: string[] };
-		validations?: FieldValidations;
-		/** Options source for select/reference fields — emitted as element overrides. */
-		datasource?: FieldDatasource;
-		colSpan?: number;
-		columnConfig?: IColumnConfig;
-		/**
-		 * Element-level column accessor — the element's `name`, overriding the
-		 * field-def name when they differ (e.g. a tenant column whose accessor
-		 * is "tenant.displayName" while the field-def is named "tenantName").
-		 */
-		columnName?: string;
-		/**
-		 * Feature flag (features.name) — the field is hidden unless the flag is
-		 * enabled for the current tenant (e.g. MI selection on the service form).
-		 */
-		requiresFeature?: string;
-		uiComponentId?: number;
-		/**
-		 * Raw element-override passthrough (e.g. `behavior: { uploadEndpoint }`
-		 * for image fields). Explicit DSL keys win when they overlap.
-		 */
-		overrides?: Record<string, unknown>;
-	}
+export interface IFieldConfig extends IComponentIdentity {
+	/** Alias for displayName (React-style). */
+	label?: string;
+	placeholder?: string;
+	isRequired?: boolean;
+	isReadOnly?: boolean;
+	isHidden?: boolean;
+	/** Default form value (create context) — e.g. a fixed typeId for template forms. */
+	defaultValue?: unknown;
+	/** Make the field read-only in specific dialog contexts (e.g. edit). */
+	readOnlyWhen?: { context?: string[] };
+	/** Hide the field unless the form is in one of these contexts (e.g. password on create only). */
+	visibleWhen?: { context?: string[] };
+	validations?: FieldValidations;
+	/** Options source for select/reference fields — emitted as element overrides. */
+	datasource?: FieldDatasource;
+	colSpan?: number;
+	columnConfig?: IColumnConfig;
+	/**
+	 * Element-level column accessor — the element's `name`, overriding the
+	 * field-def name when they differ (e.g. a tenant column whose accessor
+	 * is "tenant.displayName" while the field-def is named "tenantName").
+	 */
+	columnName?: string;
+	/**
+	 * Feature flag (features.name) — the field is hidden unless the flag is
+	 * enabled for the current tenant (e.g. MI selection on the service form).
+	 */
+	requiresFeature?: string;
+	uiComponentId?: number;
+	/**
+	 * Raw element-override passthrough (e.g. `behavior: { uploadEndpoint }`
+	 * for image fields). Explicit DSL keys win when they overlap.
+	 */
+	overrides?: Record<string, unknown>;
+}
 
 // ──────────────────────────────────────────────────────────────────
 // Per-blueprint configs — the typed replacement for the untyped
@@ -292,6 +292,12 @@ export interface IButtonCondition {
 export interface IButtonConfirm {
 	title?: string;
 	message?: string;
+	/**
+	 * A row-placeholder template (e.g. `"{title}"`). When set, the dialog asks
+	 * the admin to type that value and posts `{ confirmTitle }` with the request
+	 * — deliberate friction for cancelling or sending a batch (CRM-13).
+	 */
+	confirmByTitle?: string;
 }
 
 export interface IButtonConfig extends IComponentIdentity {
@@ -489,7 +495,11 @@ export interface IListConfig extends IComponentIdentity {
 }
 
 export interface IScreenTreeConfig extends IComponentIdentity {
-	datasource?: { endpoint: string; method?: "GET" | "POST"; params?: Record<string, unknown> };
+	datasource?: {
+		endpoint: string;
+		method?: "GET" | "POST";
+		params?: Record<string, unknown>;
+	};
 }
 
 // ── State / actions ──────────────────────────────────────────────
