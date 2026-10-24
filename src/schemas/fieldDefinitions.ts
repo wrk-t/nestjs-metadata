@@ -33,7 +33,7 @@ export const fieldDefinitions = pgTable("field_definitions", {
         | ["Pattern", string, string?]
         | ["Unique"]
         | ["SameAs", string, string?]
-        | ["Custom", string]
+        | ["Custom", string, string?]
       >
     >(),
   datasource: json("datasource").$type<
