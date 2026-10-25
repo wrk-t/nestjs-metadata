@@ -219,7 +219,7 @@ export abstract class Component<
 		};
 
 		if (typeof child === "number") {
-			ctx.elements.push({
+			ctx.addElement({
 				...base,
 				elementType: "component_ref",
 				referencedComponentId: child,
@@ -233,7 +233,7 @@ export abstract class Component<
 			// covers shared instances constructed outside any seed context)
 			// and pin its displayOrder to this slot (first parent wins).
 			child.ensureIn(ctx);
-			ctx.elements.push({
+			ctx.addElement({
 				...base,
 				elementType: "component_ref",
 				referencedComponentId: child.id,
@@ -254,12 +254,12 @@ export abstract class Component<
 			if (child.config.uiComponentId != null) {
 				row.uiComponentId = child.config.uiComponentId;
 			}
-			ctx.elements.push(row);
+			ctx.addElement(row);
 			return;
 		}
 
 		if (child instanceof Renderer) {
-			ctx.elements.push({
+			ctx.addElement({
 				...base,
 				elementType: "renderer",
 				rendererBlueprintId: child.rendererBlueprintId,

@@ -137,8 +137,29 @@ export class SeedContext {
 		if (row && row.displayOrder === 0) row.displayOrder = order;
 	}
 
+	/**
+	 * Register an element row.
+	 *
+	 * Every optional column is written explicitly (`null` when the element does
+	 * not use it). `seed.ts` upserts elements **by id**, and drizzle omits
+	 * `undefined` keys from the `DO UPDATE SET` — so without this, an element
+	 * whose id is reused after a seed edit (adding one child shifts the whole
+	 * process-global sequence) keeps the previous build's `referenced_component_id`
+	 * and a slot ends up holding both a field and a stale component.
+	 */
 	addElement(row: ElRow): void {
-		this.elements.push(row);
+		this.elements.push({
+			fieldDefinitionId: null,
+			uiComponentId: null,
+			referencedComponentId: null,
+			rendererBlueprintId: null,
+			paramBindings: null,
+			rendererConfig: null,
+			overrides: null,
+			grid: null,
+			meta: null,
+			...row,
+		});
 	}
 
 	/**

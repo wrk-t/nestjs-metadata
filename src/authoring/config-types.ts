@@ -256,6 +256,13 @@ export interface ILayoutConfig extends IComponentIdentity {
 	title?: string;
 	description?: string;
 	/**
+	 * Header toolbar children (Button components) — emitted into the layout's
+	 * `actions` slot, i.e. the top-right of the page header. This is where a
+	 * detail page keeps its lifecycle actions visible above a long form
+	 * (CRM-15: schedule/send/pause/resume on a campaign).
+	 */
+	actions?: AuthoringChild[];
+	/**
 	 * Optional entity fetch for a DYNAMIC header — the row's `name` /
 	 * `description` overlay the layout's own title/description (e.g. the
 	 * menu detail page shows the menu's name). `{param}` placeholders in
