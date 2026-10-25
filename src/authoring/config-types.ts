@@ -340,6 +340,21 @@ export interface IButtonConfirm {
 	 * — deliberate friction for cancelling or sending a batch (CRM-13).
 	 */
 	confirmByTitle?: string;
+	/**
+	 * Fetch the dialog's message **before** opening it, from a read-only endpoint.
+	 *
+	 * The use case is a confirmation that must state a live fact ("this will go to
+	 * 12 customers, 1 opted out") rather than a static warning (CRM-24's first
+	 * dialog). `endpoint` supports `{id}`-style path params like any other action;
+	 * `template` may be a `$trl_` key and uses `{path}` placeholders resolved
+	 * against the response's `data` (e.g. `{eligibleCount}`, `{excluded.optedOut}`).
+	 * If the request fails, `message` is shown instead — a confirmation never
+	 * blocks on a report.
+	 */
+	messageFrom?: {
+		endpoint: string;
+		template: string;
+	};
 }
 
 export interface IButtonConfig extends IComponentIdentity {
