@@ -62,6 +62,19 @@ export const fieldDefinitions = pgTable("field_definitions", {
         			 * Falls back to displayField when omitted.
         			 */
         			labelTemplate?: string;
+        			/**
+        			 * Query the endpoint as the user types instead of loading every
+        			 * row up front (`?search=`), for large tenant-scoped lists such as
+        			 * the CRM customer picker (CRM-10).
+        			 */
+        			remoteSearch?: { minSearchLength?: number };
+        			/**
+        			 * Copy row fields into other form fields when an option is picked
+        			 * — "use this template" fills the message body from the catalog
+        			 * (CRM-17). `{ targetField: sourceField }`; a target that already
+        			 * holds text is never replaced without asking.
+        			 */
+        			copyFields?: Record<string, string>;
         		};
       }
     | {
