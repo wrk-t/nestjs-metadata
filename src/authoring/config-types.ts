@@ -64,8 +64,43 @@ export interface IFieldConfig extends IComponentIdentity {
 	defaultValue?: unknown;
 	/** Make the field read-only in specific dialog contexts (e.g. edit). */
 	readOnlyWhen?: { context?: string[] };
-	/** Hide the field unless the form is in one of these contexts (e.g. password on create only). */
-	visibleWhen?: { context?: string[] };
+	/**
+	 * Hide the field unless the form is in one of these contexts (e.g. password
+	 * on create only), **or** unless another field's value matches.
+	 *
+	 * Two shapes, because the two questions are asked in different places:
+	 * - `{ context: ["create"] }` — dialog context, handled by the renderer's
+	 *   context gate;
+	 * - `[{ type: "simple", field: "schedule.frequency", operator: "eq",
+	 *   value: "weekly" }]` — a Formik-value condition, handled by the same
+	 *   evaluator the dynamic form uses (`allConditionsMatch`, AND semantics).
+	 *   `field` may be a dotted path (`schedule.frequency`) — that is what a form
+	 *   with a send type or an audience mode needs: one form, and only the fields
+	 *   that apply to the chosen option are visible.
+	 *
+	 * A hidden field is still in Formik's values, so a conditional field should
+	 * not be `isRequired`; the API re-validates the combination (a one-off run
+	 * without a date is a 422, not a disabled submit button).
+	 */
+	visibleWhen?:
+		| { context?: string[] }
+		| Array<{
+				type: "simple";
+				field: string;
+				operator:
+					| "eq"
+					| "ne"
+					| "gt"
+					| "gte"
+					| "lt"
+					| "lte"
+					| "contains"
+					| "in"
+					| "isEmpty"
+					| "notEmpty";
+				value?: unknown;
+				valueType?: "literal" | "field";
+		  }>;
 	validations?: FieldValidations;
 	/** Options source for select/reference fields — emitted as element overrides. */
 	datasource?: FieldDatasource;
