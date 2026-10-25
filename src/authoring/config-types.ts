@@ -323,6 +323,13 @@ export interface ILayoutConfig extends IComponentIdentity {
 export interface IButtonDialog {
 	componentId: number;
 	context?: string;
+	/**
+	 * Values to prefill the form with (CRM-27). A string may hold a row
+	 * placeholder (`"{id}"`), and a **dotted** key sets a nested form value
+	 * (`"audienceParams.groupId"`), which is how a "Send message" shortcut opens
+	 * the campaign form with its audience already chosen.
+	 */
+	extra?: Record<string, string | number | boolean>;
 }
 
 export interface IButtonCondition {
