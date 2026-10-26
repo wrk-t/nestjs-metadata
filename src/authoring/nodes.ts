@@ -516,6 +516,8 @@ export abstract class FieldNode extends AuthoringNode {
 		if (cfg.isReadOnly != null) out.isReadOnly = cfg.isReadOnly;
 		if (cfg.readOnlyWhen != null) out.readOnlyWhen = cfg.readOnlyWhen;
 		if (cfg.visibleWhen != null) out.visibleWhen = cfg.visibleWhen;
+		if (cfg.visibleInContexts != null)
+			out.visibleInContexts = cfg.visibleInContexts;
 		if (cfg.disabledWhen != null) out.disabledWhen = cfg.disabledWhen;
 		if (cfg.requiredWhen != null) out.requiredWhen = cfg.requiredWhen;
 		if (cfg.requiresFeature != null) out.requiresFeature = cfg.requiresFeature;

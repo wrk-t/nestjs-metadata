@@ -102,6 +102,13 @@ export interface IFieldConfig extends IComponentIdentity {
 				valueType?: "literal" | "field";
 		  }>;
 	/**
+	 * Show the field only in these dialog contexts, **in addition to** any
+	 * `visibleWhen` value conditions. Use this when both are needed — e.g. a
+	 * member picker that exists while creating a group and only for a manual
+	 * audience, but is hidden when editing (members have their own tab there).
+	 */
+	visibleInContexts?: string[];
+	/**
 	 * The field stays visible but is disabled while ANY condition matches — the
 	 * audience a "Send message" shortcut already chose is shown, locked, instead
 	 * of disappearing.
