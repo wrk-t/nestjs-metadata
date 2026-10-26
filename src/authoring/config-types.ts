@@ -101,6 +101,50 @@ export interface IFieldConfig extends IComponentIdentity {
 				value?: unknown;
 				valueType?: "literal" | "field";
 		  }>;
+	/**
+	 * The field stays visible but is disabled while ANY condition matches — the
+	 * audience a "Send message" shortcut already chose is shown, locked, instead
+	 * of disappearing.
+	 */
+	disabledWhen?: Array<{
+		type: "simple";
+		field: string;
+		operator:
+			| "eq"
+			| "ne"
+			| "gt"
+			| "gte"
+			| "lt"
+			| "lte"
+			| "contains"
+			| "in"
+			| "isEmpty"
+			| "notEmpty";
+		value?: unknown;
+		valueType?: "literal" | "field";
+	}>;
+	/**
+	 * The field is required only while ANY condition matches (an "One customer
+	 * group" audience requires the group picker, a "Specific customer" audience
+	 * requires the customer picker).
+	 */
+	requiredWhen?: Array<{
+		type: "simple";
+		field: string;
+		operator:
+			| "eq"
+			| "ne"
+			| "gt"
+			| "gte"
+			| "lt"
+			| "lte"
+			| "contains"
+			| "in"
+			| "isEmpty"
+			| "notEmpty";
+		value?: unknown;
+		valueType?: "literal" | "field";
+	}>;
 	validations?: FieldValidations;
 	/** Options source for select/reference fields — emitted as element overrides. */
 	datasource?: FieldDatasource;
@@ -412,8 +456,16 @@ export interface IButtonConfig extends IComponentIdentity {
 	path?: string;
 	/** apiCall: confirmation dialog before firing. */
 	confirm?: IButtonConfirm;
-	/** Row-level visibility condition (table row actions). */
-	condition?: IButtonCondition;
+	/** Row-level visibility condition (table row actions). Several entries are
+	 *  a conjunction — e.g. `status in [draft, paused] AND deletedAt is empty`. */
+	condition?: IButtonCondition | IButtonCondition[];
+	/**
+	 * submit: save the form **and then** fire its follow-up send (the message
+	 * builder's "Send now"). The renderer exposes it as the dialog's secondary
+	 * action, keeps the primary submit for "Save draft", and asks for the typed
+	 * title before sending.
+	 */
+	sendNow?: boolean;
 }
 
 export interface ILinkConfig extends IComponentIdentity {
