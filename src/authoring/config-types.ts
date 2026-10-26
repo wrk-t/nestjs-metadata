@@ -19,6 +19,12 @@ export interface IColumnConfig {
 	width?: number;
 	sortable?: boolean;
 	filterable?: boolean;
+	/**
+	 * Hide the column when every row on the current page has an empty value.
+	 * Used for columns that only apply to one audience mode (e.g. "Added" is
+	 * meaningful for a manual group, null for a rule-resolved member).
+	 */
+	hideWhenEmpty?: boolean;
 	filterType?: "text" | "number" | "select" | "date" | "boolean";
 	/**
 	 * Option source for select filters — a static list or an API endpoint
