@@ -479,6 +479,11 @@ export interface IButtonConfig extends IComponentIdentity {
 	 * title before sending.
 	 */
 	sendNow?: boolean;
+	/**
+	 * Stretch the button to its container's width (MUI `fullWidth`) — a form's
+	 * single submit reads better edge-to-edge than a content-sized pill.
+	 */
+	fullWidth?: boolean;
 }
 
 export interface ILinkConfig extends IComponentIdentity {
