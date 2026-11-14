@@ -381,6 +381,16 @@ export interface IButtonDialog {
 	componentId: number;
 	context?: string;
 	/**
+	 * Dialog title — a `$trl_` key (already resolved by metadata) or a literal,
+	 * optionally with `{field}` placeholders taken from the row. When omitted the
+	 * renderer falls back to the action's label instead of a pluralised entity.
+	 */
+	title?: string;
+	/** Dialog width hint; line editors default to `lg`. */
+	size?: "sm" | "md" | "lg" | "fullScreen";
+	/** Row columns made available to `title` placeholders and the form. */
+	rowFields?: string[] | Record<string, string>;
+	/**
 	 * Values to prefill the form with (CRM-27). A string may hold a row
 	 * placeholder (`"{id}"`), and a **dotted** key sets a nested form value
 	 * (`"audienceParams.groupId"`), which is how a "Send message" shortcut opens
